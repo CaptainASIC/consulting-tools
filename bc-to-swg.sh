@@ -26,16 +26,8 @@ echo "Connecting to $BLUECOAT_SOURCE via SSH..."
 echo "Please enter your SSH password when prompted."
 
 # Using built-in SSH to connect and execute the command
-output=$(ssh -o StrictHostKeyChecking=no "$USERNAME@$BLUECOAT_SOURCE" "show static-routes")
-
-# Check if SSH command was successful
-if [[ $? -eq 0 ]]; then
-    echo "$output" > "$TEMP_FILE"
-    echo "Static routes have been saved to $TEMP_FILE."
-else
-    echo "An error occurred while retrieving the static routes."
-    exit 1
-fi
+output=$(ssh "$USERNAME@$BLUECOAT_SOURCE" "show static-routes")
+echo "$output" > "$TEMP_FILE"
 
 # Filter the output file to retain only lines after "Destination" and before "Internet 6:"
 echo "Filtering the file to include only relevant routes..."
