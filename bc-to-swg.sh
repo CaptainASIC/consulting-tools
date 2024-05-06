@@ -4,7 +4,6 @@
 read_source() {
     read -p "Enter Bluecoat Source (IP or FQDN): " BLUECOAT_SOURCE
     read -p "Enter username for Bluecoat: " USERNAME
-    read -s -p "Enter password for Bluecoat: " PASSWORD
     echo
 }
 
