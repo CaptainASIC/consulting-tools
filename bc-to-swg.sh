@@ -1,7 +1,65 @@
 #!/bin/bash
 
+VERSION="1.0.0"
+BANNER="
+██████╗ ██╗     ██╗   ██╗███████╗ ██████╗ ██████╗  █████╗ ████████╗                                                                                 
+██╔══██╗██║     ██║   ██║██╔════╝██╔════╝██╔═══██╗██╔══██╗╚══██╔══╝                                                                                 
+██████╔╝██║     ██║   ██║█████╗  ██║     ██║   ██║███████║   ██║                                                                                    
+██╔══██╗██║     ██║   ██║██╔══╝  ██║     ██║   ██║██╔══██║   ██║                                                                                    
+██████╔╝███████╗╚██████╔╝███████╗╚██████╗╚██████╔╝██║  ██║   ██║                                                                                    
+╚═════╝ ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝                                                                                    
+                                                                                                                                                    
+████████╗ ██████╗                                                                                                                                   
+╚══██╔══╝██╔═══██╗                                                                                                                                  
+   ██║   ██║   ██║                                                                                                                                  
+   ██║   ██║   ██║                                                                                                                                  
+   ██║   ╚██████╔╝                                                                                                                                  
+   ╚═╝    ╚═════╝                                                                                                                                   
+                                                                                                                                                    
+███████╗██╗  ██╗██╗   ██╗██╗  ██╗██╗ ██████╗ ██╗  ██╗    ██╗    ██╗███████╗██████╗      ██████╗  █████╗ ████████╗███████╗██╗    ██╗ █████╗ ██╗   ██╗
+██╔════╝██║ ██╔╝╚██╗ ██╔╝██║  ██║██║██╔════╝ ██║  ██║    ██║    ██║██╔════╝██╔══██╗    ██╔════╝ ██╔══██╗╚══██╔══╝██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝
+███████╗█████╔╝  ╚████╔╝ ███████║██║██║  ███╗███████║    ██║ █╗ ██║█████╗  ██████╔╝    ██║  ███╗███████║   ██║   █████╗  ██║ █╗ ██║███████║ ╚████╔╝ 
+╚════██║██╔═██╗   ╚██╔╝  ██╔══██║██║██║   ██║██╔══██║    ██║███╗██║██╔══╝  ██╔══██╗    ██║   ██║██╔══██║   ██║   ██╔══╝  ██║███╗██║██╔══██║  ╚██╔╝  
+███████║██║  ██╗   ██║   ██║  ██║██║╚██████╔╝██║  ██║    ╚███╔███╔╝███████╗██████╔╝    ╚██████╔╝██║  ██║   ██║   ███████╗╚███╔███╔╝██║  ██║   ██║   
+╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝  ╚═╝     ╚══╝╚══╝ ╚══════╝╚═════╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   
+                                                                                                                                                    
+██╗   ██╗████████╗██╗██╗     ██╗████████╗██╗███████╗███████╗                                                                                        
+██║   ██║╚══██╔══╝██║██║     ██║╚══██╔══╝██║██╔════╝██╔════╝                                                                                        
+██║   ██║   ██║   ██║██║     ██║   ██║   ██║█████╗  ███████╗                                                                                        
+██║   ██║   ██║   ██║██║     ██║   ██║   ██║██╔══╝  ╚════██║                                                                                        
+╚██████╔╝   ██║   ██║███████╗██║   ██║   ██║███████╗███████║                                                                                        
+ ╚═════╝    ╚═╝   ╚═╝╚══════╝╚═╝   ╚═╝   ╚═╝╚══════╝╚══════╝                                                                                        
+"
+
+# Display the banner and version
+echo "$BANNER"
+echo "Version: $VERSION"
+
+# Function to display the menu
+display_menu() {
+    echo "Menu Options:"
+    echo "1. Migrate Static Routes"
+    echo "Q. Quit"
+    echo "Please select an option:"
+    read option
+    case $option in
+        1)
+            migrate_routes
+            ;;
+        [Qq])
+            echo "Exiting program."
+            exit 0
+            ;;
+        *)
+            echo "Invalid option, please try again."
+            display_menu
+            ;;
+    esac
+}
+
 # Function to prompt for the Bluecoat Source
 read_source() {
+    echo "Enter details for Bluecoat source:"
     read -p "Enter Bluecoat Source (IP or FQDN): " BLUECOAT_SOURCE
     read -p "Enter username for Bluecoat: " USERNAME
     echo
@@ -9,68 +67,52 @@ read_source() {
 
 # Function to prompt for the SWG IP
 read_destination() {
+    echo "Enter details for Destination SWG:"
     read -p "Enter Destination SWG IP: " SWG_IP
     read -p "Enter username for SWG: " SWG_USER
     read -s -p "Enter password for SWG: " SWG_PASS
     echo
 }
 
-# Prompt for the Bluecoat source and username
-read_source
+# The main function to handle the migration of routes
+migrate_routes() {
+    read_source
 
-# Execute SSH command to fetch static routes
-TEMP_FILE="${BLUECOAT_SOURCE}_static_routes.csv"
+    # Execute SSH command to fetch static routes
+    TEMP_FILE="${BLUECOAT_SOURCE}_static_routes.csv"
 
-echo "Connecting to $BLUECOAT_SOURCE via SSH..."
-echo "Please enter your SSH password when prompted."
+    echo "Connecting to $BLUECOAT_SOURCE via SSH..."
+    echo "Please enter your SSH password when prompted."
 
-# Using built-in SSH to connect and execute the command
-output=$(ssh "$USERNAME@$BLUECOAT_SOURCE" "show static-routes")
-echo "$output" > "$TEMP_FILE"
+    # Using built-in SSH to connect and execute the command
+    output=$(ssh -o StrictHostKeyChecking=no "$USERNAME@$BLUECOAT_SOURCE" "show static-routes")
+    echo "$output" > "$TEMP_FILE"
 
-# Filter the output file to retain only lines after "Destination" and before "Internet 6:"
-echo "Filtering the file to include only relevant routes..."
-awk '/^Destination/{flag=1; next} /Internet 6:/{flag=0; next} flag' "$TEMP_FILE" > temp.csv && mv temp.csv "$TEMP_FILE"
+    # Filter the output file to retain only lines after "Destination" and before "Internet 6:"
+    echo "Filtering the file to include only relevant routes..."
+    awk '/^Destination/{flag=1; next} /Internet 6:/{flag=0; next} flag' "$TEMP_FILE" > temp.csv && mv temp.csv "$TEMP_FILE"
 
-# Check if the filtering was successful
-if [[ $? -eq 0 ]]; then
-    echo "Output filtered and saved to $TEMP_FILE."
-else
-    echo "An error occurred while filtering the routes."
-    exit 1
-fi
+    # Check if the filtering was successful
+    if [[ $? -eq 0 ]]; then
+        echo "Output filtered and saved to $TEMP_FILE."
+    else
+        echo "An error occurred while filtering the routes."
+        exit 1
+    fi
 
-# Provide some feedback on the final file
-ls -l "$TEMP_FILE"
-cat "$TEMP_FILE"
+    # Provide some feedback on the final file
+    ls -l "$TEMP_FILE"
+    cat "$TEMP_FILE"
 
+    read_destination
 
-# Prompt for the destination SWG IP and credentials
-read_destination
+    # Prepare data and authorization for API calls
+    ENCODED_CREDS=$(echo -n "$SWG_USER:$SWG_PASS" | base64)
+    AUTH_HEADER="Authorization: Basic $ENCODED_CREDS"
 
-# Prepare data and authorization for API calls
-ENCODED_CREDS=$(echo -n "$SWG_USER:$SWG_PASS" | base64)
-AUTH_HEADER="Authorization: Basic $ENCODED_CREDS"
+    # Fetch UUID for the SWG
+    UUID=$(curl -s -H "$AUTH_HEADER" "http://$SWG_IP:4712/Konfigurator/REST/appliances/" | grep -oP 'UUID>\K[^<]+')
+    echo "Fetched UUID: $UUID"
 
-# Fetch UUID for the SWG
-UUID=$(curl -s -H "$AUTH_HEADER" "http://$SWG_IP:4712/Konfigurator/REST/appliances/" | grep -oP 'UUID>\K[^<]+')
-echo "Fetched UUID: $UUID"
-
-# Prepare to POST the new routes
-ROUTE_URL="http://$SWG_IP:4712/Konfigurator/REST/appliances/$UUID/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-
-# Read and format the routes from the Bluecoat static routes file
-while IFS= read -r line; do
-    IFS=' ' read -r DESTINATION SWG DEVICE <<< "$line"
-    DESCRIPTION="migration tool import"
-    XML_PAYLOAD="<entry><content><listEntry><complexEntry><configurationProperties><configurationProperty key='network.routes.destination' value='$DESTINATION'/><configurationProperty key='network.routes.SWG' value='$SWG'/><configurationProperty key='network.routes.device' value='$DEVICE'/><configurationProperty key='network.routes.description' value='$DESCRIPTION'/></configurationProperties></complexEntry></listEntry></content></entry>"
-
-    # POST the new route
-    curl -X POST -H "$AUTH_HEADER" -H "Content-Type: application/atom+xml" --data "$XML_PAYLOAD" "$ROUTE_URL"
-done < "$TEMP_FILE"
-
-# Commit changes
-COMMIT_URL="http://$SWG_IP:4712/Konfigurator/REST/commit"
-curl -X POST -H "$AUTH_HEADER" "$COMMIT_URL"
-
-echo "Routes have been posted to the SWG."
+    # Prepare to POST the new routes
+    ROUTE
