@@ -61,7 +61,7 @@ while IFS= read -r line; do
 done < "$TEMP_FILE"
 
 # Commit changes
-COMMIT_URL="http://$SWG_IP:4711/Konfigurator/REST/commit"
+COMMIT_URL="http://$SWG_IP:4712/Konfigurator/REST/commit"
 curl -X POST -H "$AUTH_HEADER" "$COMMIT_URL"
 
 echo "Routes have been posted to the SWG."
