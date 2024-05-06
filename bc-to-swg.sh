@@ -96,7 +96,7 @@ migrate_routes() {
 
     # Filter the output file to retain only lines after "Destination" and before "Internet 6:"
     echo "Filtering the file to include only relevant routes..."
-    awk '/^Destination/{flag=1; next} /Internet 6:/{flag=0; next} flag' "$TEMP_FILE" > temp.csv && mv temp.csv "$TEMP_FILE"
+    awk '/^Destination/{flag=1; next} /Internet6:/{flag=0; next} flag' "$TEMP_FILE" > temp.csv && mv temp.csv "$TEMP_FILE"
 
     # Check if the filtering was successful
     if [[ $? -eq 0 ]]; then
