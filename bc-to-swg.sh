@@ -26,13 +26,8 @@ echo "Connecting to $BLUECOAT_SOURCE via SSH..."
 echo "Please enter your SSH password when prompted."
 
 # Using built-in SSH to connect and execute the command
-ssh -vvv -o StrictHostKeyChecking=no "$USERNAME@$BLUECOAT_SOURCE" "show static-routes" > "$TEMP_FILE" 2> ssh_error.log
-
-if [[ $? -ne 0 ]]; then
-    echo "SSH failed, here's the debug output:"
-    cat ssh_error.log
-    exit 1
-fi
+output=$(ssh "$USERNAME@$BLUECOAT_SOURCE" "show static-routes")
+echo "$output" > "$TEMP_FILE"
 
 if [[ $? -eq 0 ]]; then
     echo "Static routes have been saved to $TEMP_FILE."
