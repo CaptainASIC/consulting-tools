@@ -3,10 +3,30 @@ from tkinter import messagebox
 import subprocess
 import requests
 import webbrowser
+import sys
 from base64 import b64encode
 
 # Define app version in a variable
 app_version = "1.0.1"
+
+def check_dependencies():
+    required_modules = ["requests"]
+    missing_modules = []
+    for module in required_modules:
+        try:
+            __import__(module)
+        except ImportError:
+            missing_modules.append(module)
+
+    if missing_modules:
+        response = messagebox.askyesno(
+            "Missing Dependencies",
+            f"The following modules are missing: {', '.join(missing_modules)}\nDo you want to install them now?"
+        )
+        if response:
+            subprocess.call([sys.executable, "-m", "pip", "install"] + missing_modules)
+        else:
+            sys.exit("Exiting: Cannot run the application without all dependencies.")
 
 def fetch_static_routes(source_ip, username, password, dest_ip, dest_user, dest_pass):
     # Attempt to fetch static routes via SSH
@@ -100,6 +120,7 @@ def show_about():
     text_widget.pack(expand=True, fill='both')
 
 def main():
+    check_dependencies()
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Web Gateway Migration Assistant Utility - Version {app_version}")
     root.geometry("640x480")
