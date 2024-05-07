@@ -78,7 +78,7 @@ def show_about():
     about_text = f"Bluecoat to SkyHigh Web Gateway\nMigration Assistant Utility\nVersion: {app_version}\nAuthor: Captain ASIC\n"
     about_window = tk.Toplevel()
     about_window.title("About")
-    about_window.geometry("400x480")  # Adjust the size to fit content and spacing
+    about_window.geometry("400x540")  # Adjust the size to fit content and spacing
     about_window.resizable(False, False)  # Make the window not resizable
 
     # Load and display the image at the top of the popup
