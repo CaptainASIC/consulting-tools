@@ -6,7 +6,7 @@ import webbrowser
 from base64 import b64encode
 
 # Define app version in a variable
-app_version = "1.0.2"
+app_version = "1.0.3"
 
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
@@ -54,17 +54,31 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
     try:
+        # Post routes
         with open(filename, "r") as file:
             lines = file.readlines()
-
         xml_payload = "<entry><content>Example</content></entry>"
         route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/configuration/some-endpoint"
         response = requests.post(route_url, headers=headers, data=xml_payload)
         response.raise_for_status()
-
         messagebox.showinfo("Success", "Routes have been posted to the SWG.")
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+
+        # Logout after posting
+        logout_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/logout"
+        logout_response = requests.post(logout_url, headers=headers)
+        logout_response.raise_for_status()
+        messagebox.showinfo("Logout Successful", "Successfully logged out from the destination device.")
+
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
+
+def migrate_action():
+    if src_type.get() == "file":
+        clean_and_save_routes(file_entry.get())
+    else:
+        fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv")
+    post_routes(entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get() if src_type.get() == "file" else f"{entries[0].get()}.csv")
+
 
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
@@ -141,7 +155,16 @@ def main():
     browse_button.grid(row=5, column=3, pady=20)
 
     # Migrate button with conditional action based on source type
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), file_entry.get() if src_type.get() == "file" else f"{entries[0].get()}.csv"))
+    def migrate_action():
+        if src_type.get() == "file":
+            # Directly use the file if selected, ensuring it's cleaned
+            clean_and_save_routes(file_entry.get())
+            post_routes(entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get())
+        else:
+            # Fetch live data if that's selected
+            fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv")
+
+    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=migrate_action)
     btn_migrate.grid(row=7, column=0, columnspan=5, pady=20)
 
     # Frame for the buttons at the bottom
@@ -159,4 +182,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
