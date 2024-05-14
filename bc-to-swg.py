@@ -8,6 +8,23 @@ from base64 import b64encode
 # Define app version in a variable
 app_version = "1.0.4"
 
+def get_appliance_uuid(dest_ip, dest_user, dest_pass):
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header}
+    url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances"
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
+        from xml.etree import ElementTree as ET
+        root = ET.fromstring(response.content)
+        uuid = root.find('.//id').text
+        return uuid
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
+        return None
+
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
     try:
@@ -58,28 +75,53 @@ def clean_and_save_routes(filename):
 
 
 def post_routes(dest_ip, dest_user, dest_pass, filename):
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+    if not uuid:
+        return  # Stop if UUID could not be retrieved
+
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
     try:
         with open(filename, "r") as file:
-            # Read only the necessary route information if needed, or prepare XML/JSON payload
             lines = file.readlines()
-        # Example payload; adjust as necessary
-        xml_payload = "<entry><content>" + "".join(lines) + "</content></entry>"
-        route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/configuration/some-endpoint"
+        
+        # Constructing the XML payload with specific fields
+        xml_payload = '<entry><content type="application/xml"><list>'
+        for line in lines:
+            parts = line.strip().split(',')
+            if len(parts) >= 2:  # Ensuring there are at least two parts, destination and gateway
+                xml_payload += f'''
+                <listEntry>
+                    <complexEntry>
+                        <configurationProperties>
+                            <configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/>
+                            <configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/>
+                            <configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/>
+                            <configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/>
+                        </configurationProperties>
+                    </complexEntry>
+                </listEntry>'''
+        xml_payload += '</list></content></entry>'
+
+        route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+        
+        # Post static routes
         response = requests.post(route_url, headers=headers, data=xml_payload)
         response.raise_for_status()
-        messagebox.showinfo("Success", "Routes have been posted to the SWG.")
+        
+        # Commit changes
+        commit_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
+        requests.post(commit_url, headers=headers).raise_for_status()
+        
+        # Logout
+        logout_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
+        requests.post(logout_url, headers=headers).raise_for_status()
 
-        # Logout after posting
-        logout_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/logout"
-        logout_response = requests.post(logout_url, headers=headers)
-        logout_response.raise_for_status()
-        messagebox.showinfo("Logout Successful", "Successfully logged out from the destination device.")
-
+        messagebox.showinfo("Success", "Routes have been posted and committed to the SWG, and logout was successful.")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
+
 
 def migrate_action():
     if src_type.get() == "file":
