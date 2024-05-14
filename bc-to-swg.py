@@ -29,24 +29,23 @@ def fetch_static_routes(source_ip, username, password, filename):
         messagebox.showerror("Error", str(e))
 
 def clean_and_save_routes(filename):
-    # Read the output and apply cleaning similar to awk script
+    # Read the output and apply cleaning
     with open(filename, "r") as file:
         lines = file.readlines()
 
-    # Define flags to control when to start and stop capturing lines
     start_cleaning = False
     cleaned_lines = []
 
     for line in lines:
         if "Internet:" in line:
-            start_cleaning = True  # Start capturing lines after seeing "Internet:"
+            start_cleaning = True  # Start capturing lines from "Internet:"
         elif "Internet6:" in line:
-            break  # Stop processing altogether once "Internet6:" is found
-        
-        if start_cleaning:
-            cleaned_lines.append(line)  # Append lines that are within the desired range
+            break  # Break the loop if "Internet6:" appears (stop capturing)
 
-    # Create a new filename for the cleaned data
+        if start_cleaning:
+            cleaned_lines.append(line)  # Append lines within the range
+
+    # Assuming the new file name is the original with '_cleaned' appended before '.csv'
     cleaned_filename = filename.replace('.csv', '_cleaned.csv')
 
     # Write the cleaned data to a new file
@@ -57,16 +56,17 @@ def clean_and_save_routes(filename):
     return cleaned_filename
 
 
+
 def post_routes(dest_ip, dest_user, dest_pass, filename):
-    # Prepare the authorization and headers for HTTP request
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
     try:
-        # Post routes
         with open(filename, "r") as file:
+            # Read only the necessary route information if needed, or prepare XML/JSON payload
             lines = file.readlines()
-        xml_payload = "<entry><content>Example</content></entry>"
+        # Example payload; adjust as necessary
+        xml_payload = "<entry><content>" + "".join(lines) + "</content></entry>"
         route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/configuration/some-endpoint"
         response = requests.post(route_url, headers=headers, data=xml_payload)
         response.raise_for_status()
