@@ -114,7 +114,7 @@ def show_about():
 
 def main():
     root = tk.Tk()
-    root.title(f"Bluecoat to SkyHigh Web Gateway Migration Assistant Utility - Version {app_version}")
+    root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("640x480")
     root.resizable(False, False)
 
