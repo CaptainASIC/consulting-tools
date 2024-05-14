@@ -1,14 +1,14 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import subprocess
 import requests
 import webbrowser
 from base64 import b64encode
 
 # Define app version in a variable
-app_version = "1.0.1"
+app_version = "1.0.2"
 
-def fetch_static_routes(source_ip, username, password, dest_ip, dest_user, dest_pass):
+def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
     try:
         command = f"ssh {username}@{source_ip} 'show static-routes'"
@@ -18,8 +18,6 @@ def fetch_static_routes(source_ip, username, password, dest_ip, dest_user, dest_
         if proc.returncode != 0:
             raise Exception(errors)
 
-        # Write the output to a CSV file named after the source IP or hostname
-        filename = f"{source_ip}.csv"
         with open(filename, "w") as f:
             f.write(output)
 
@@ -27,8 +25,6 @@ def fetch_static_routes(source_ip, username, password, dest_ip, dest_user, dest_
         # Clean up the output and save it again
         clean_and_save_routes(filename)
 
-        # Proceed to post routes to destination
-        post_routes(dest_ip, dest_user, dest_pass)
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
@@ -52,26 +48,29 @@ def clean_and_save_routes(filename):
 
     messagebox.showinfo("Info", f"Cleaned static routes have been saved to {filename}.")
 
-def post_routes(swg_ip, swg_user, swg_pass):
+def post_routes(dest_ip, dest_user, dest_pass, filename):
     # Prepare the authorization and headers for HTTP request
-    auth_header = "Basic " + b64encode(f"{swg_user}:{swg_pass}".encode()).decode("utf-8")
-    headers = {
-        "Authorization": auth_header,
-        "Content-Type": "application/atom+xml"
-    }
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
     try:
-        with open("hostname.csv", "r") as file:
+        with open(filename, "r") as file:
             lines = file.readlines()
 
         xml_payload = "<entry><content>Example</content></entry>"
-        route_url = f"http://{swg_ip}:4712/Konfigurator/REST/appliances/UUID/configuration/some-endpoint"
+        route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/UUID/configuration/some-endpoint"
         response = requests.post(route_url, headers=headers, data=xml_payload)
         response.raise_for_status()
 
         messagebox.showinfo("Success", "Routes have been posted to the SWG.")
     except Exception as e:
         messagebox.showerror("Error", str(e))
+
+def choose_file(entry):
+    filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+    if filename:
+        entry.delete(0, tk.END)
+        entry.insert(0, filename)
 
 def show_about():
     # Display about information using the global app_version variable
@@ -109,21 +108,41 @@ def main():
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
-    # Labels and entries using grid in the field frame
-    labels = ["Source IP/FQDN:", "Source Username:", "Source Password:", "Destination SWG IP:", "Destination Username:", "Destination Password:"]
+    # Radio button for live data
+    src_type = tk.StringVar(value="live")
+    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
+    live_radio.grid(row=0, column=0, sticky="w")
+
+    # Labels and entries for source information
+    source_labels = ["Source IP/FQDN:", "Source Username:", "Source Password:"]
     entries = []
-    for i, label in enumerate(labels):
-        row = i % 3
-        column = 0 if i < 3 else 1
+    for i, label in enumerate(source_labels):
         label_widget = tk.Label(field_frame, text=label)
-        label_widget.grid(row=row, column=column*2, sticky="e", padx=(20, 0))
+        label_widget.grid(row=i+1, column=0, sticky="e")
         entry = tk.Entry(field_frame)
-        entry.grid(row=row, column=column*2+1, sticky="w", padx=(0, 20))
+        entry.grid(row=i+1, column=1, sticky="ew")
         entries.append(entry)
 
-    # Migrate button
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: fetch_static_routes(*[e.get() for e in entries[:3]], *[e.get() for e in entries[3:]]))
-    btn_migrate.grid(row=3, column=0, columnspan=4, pady=20)
+    # Labels and entries for destination information
+    dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:"]
+    for i, label in enumerate(dest_labels):
+        label_widget = tk.Label(field_frame, text=label)
+        label_widget.grid(row=i+1, column=2, sticky="e")
+        entry = tk.Entry(field_frame)
+        entry.grid(row=i+1, column=3, sticky="ew")
+        entries.append(entry)
+
+    # Radio button for file data and related fields
+    file_radio = tk.Radiobutton(field_frame, text="File Data", variable=src_type, value="file")
+    file_radio.grid(row=5, column=0, sticky="w", rowspan=2, pady=20)
+    file_entry = tk.Entry(field_frame)
+    file_entry.grid(row=5, column=1, sticky="ew", columnspan=2, rowspan=2,pady=20)
+    browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
+    browse_button.grid(row=5, column=3, pady=20)
+
+    # Migrate button with conditional action based on source type
+    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), file_entry.get() if src_type.get() == "file" else f"{entries[0].get()}.csv"))
+    btn_migrate.grid(row=7, column=0, columnspan=5, pady=20)
 
     # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
@@ -140,3 +159,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
