@@ -6,7 +6,7 @@ import webbrowser
 from base64 import b64encode
 
 # Define app version in a variable
-app_version = "1.0.3"
+app_version = "1.0.4"
 
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
@@ -33,20 +33,29 @@ def clean_and_save_routes(filename):
     with open(filename, "r") as file:
         lines = file.readlines()
 
+    # Define flags to control when to start and stop capturing lines
     start_cleaning = False
     cleaned_lines = []
-    for line in lines:
-        if "Internet6:" in line:
-            break
-        if start_cleaning:
-            cleaned_lines.append(line)
-        if "Destination" in line:
-            start_cleaning = True
 
-    with open(filename, "w") as file:
+    for line in lines:
+        if "Internet:" in line:
+            start_cleaning = True  # Start capturing lines after seeing "Internet:"
+        elif "Internet6:" in line:
+            break  # Stop processing altogether once "Internet6:" is found
+        
+        if start_cleaning:
+            cleaned_lines.append(line)  # Append lines that are within the desired range
+
+    # Create a new filename for the cleaned data
+    cleaned_filename = filename.replace('.csv', '_cleaned.csv')
+
+    # Write the cleaned data to a new file
+    with open(cleaned_filename, "w") as file:
         file.writelines(cleaned_lines)
 
-    messagebox.showinfo("Info", f"Cleaned static routes have been saved to {filename}.")
+    messagebox.showinfo("Info", f"Cleaned static routes have been saved to {cleaned_filename}.")
+    return cleaned_filename
+
 
 def post_routes(dest_ip, dest_user, dest_pass, filename):
     # Prepare the authorization and headers for HTTP request
@@ -74,10 +83,13 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
 
 def migrate_action():
     if src_type.get() == "file":
-        clean_and_save_routes(file_entry.get())
+        cleaned_file = clean_and_save_routes(file_entry.get())
+        post_routes(entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file)
     else:
-        fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv")
-    post_routes(entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get() if src_type.get() == "file" else f"{entries[0].get()}.csv")
+        source_file = f"{entries[0].get()}.csv"
+        fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
+        cleaned_file = clean_and_save_routes(source_file)
+        post_routes(entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file)
 
 
 def choose_file(entry):
