@@ -8,6 +8,8 @@ from base64 import b64encode
 # Define app version in a variable
 app_version = "1.0.4"
 
+src_type = tk.StringVar(value="live") 
+
 def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header}
@@ -177,7 +179,6 @@ def main():
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
     # Radio button for live data
-    src_type = tk.StringVar(value="live")
     live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
     live_radio.grid(row=0, column=0, sticky="w")
 
@@ -208,6 +209,7 @@ def main():
     browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
     browse_button.grid(row=5, column=3, pady=20)
 
+    # Migrate button with conditional action based on source type
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=migrate_action)
     btn_migrate.grid(row=7, column=0, columnspan=5, pady=20)
 
