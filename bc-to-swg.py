@@ -110,11 +110,10 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         with open(filename, "r") as file:
             lines = file.readlines()
         
-        # Constructing the XML payload with specific fields
         xml_payload = '<entry><content type="application/xml"><list>'
         for line in lines:
             parts = line.strip().split(',')
-            if len(parts) >= 2:  # Ensuring there are at least two parts, destination and gateway
+            if len(parts) >= 2:
                 xml_payload += f'''
                 <listEntry>
                     <complexEntry>
@@ -129,22 +128,22 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         xml_payload += '</list></content></entry>'
 
         route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-        
-        # Post static routes
-        response = requests.post(route_url, headers=headers, verify=False)
+        # Post Static Routes
+        response = requests.put(route_url, headers=headers, data=xml_payload, verify=False)
+        if response.status_code == 405:
+            raise Exception("Method Not Allowed - Check if PUT is allowed for this endpoint.")
         response.raise_for_status()
-        
-        # Commit changes
+        # Commit Changes
         commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
         requests.post(commit_url, headers=headers, verify=False).raise_for_status()
-        
-        # Logout
+        # Log out of API
         logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
         requests.post(logout_url, headers=headers, verify=False).raise_for_status()
-
+        # Finished
         messagebox.showinfo("Success", "Routes have been posted and committed to the SWG, and logout was successful.")
     except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
+        messagebox.showerror("Error", f"Failed to communicate with the destination device: Detailed Error: {e.response.text if e.response else 'No response text'}")
+
 
 
 def migrate_action(src_type, entries, file_entry):
@@ -242,7 +241,7 @@ def main():
 
     # Add a button for performing the GET test
     btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
-    btn_get_test.grid(row=8, column=5, pady=20)
+    btn_get_test.grid(row=7, column=3, pady=20)
 
     # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
