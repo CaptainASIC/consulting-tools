@@ -208,16 +208,6 @@ def main():
     browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
     browse_button.grid(row=5, column=3, pady=20)
 
-    # Migrate button with conditional action based on source type
-    def migrate_action():
-        if src_type.get() == "file":
-            # Directly use the file if selected, ensuring it's cleaned
-            clean_and_save_routes(file_entry.get())
-            post_routes(entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get())
-        else:
-            # Fetch live data if that's selected
-            fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv")
-
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=migrate_action)
     btn_migrate.grid(row=7, column=0, columnspan=5, pady=20)
 
