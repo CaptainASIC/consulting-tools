@@ -54,8 +54,8 @@ def clean_and_save_routes(filename):
     cleaned_lines = []
 
     for line in lines:
-        if "Internet:" in line:
-            start_cleaning = True  # Start capturing lines from "Internet:"
+        if "default" in line:
+            start_cleaning = True  # Start capturing lines from "default"
         elif "Internet6:" in line:
             break  # Break the loop if "Internet6:" appears (stop capturing)
 
@@ -126,12 +126,12 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
 def migrate_action():
     if src_type.get() == "file":
         cleaned_file = clean_and_save_routes(file_entry.get())
-        post_routes(entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
     else:
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
 
 
 def choose_file(entry):
