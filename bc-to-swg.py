@@ -16,6 +16,10 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     try:
         response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
+
+        # Log the raw XML for debugging
+        print("Raw XML Response:", response.text)
+
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         from xml.etree import ElementTree as ET
         root = ET.fromstring(response.content)
