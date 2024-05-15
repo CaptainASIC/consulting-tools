@@ -20,6 +20,10 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
         from xml.etree import ElementTree as ET
         root = ET.fromstring(response.content)
         uuid = root.find('.//id').text
+
+        # Display a popup with the UUID
+        messagebox.showinfo("UUID Retrieved", f"Current System UUID: {uuid}")
+
         return uuid
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
