@@ -8,8 +8,6 @@ from base64 import b64encode
 # Define app version in a variable
 app_version = "1.0.4"
 
-def get_apsrc_type = tk.StringVar(value="live") 
-
 def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header}
@@ -180,6 +178,10 @@ def main():
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
+    # Radio buttons for selecting data source
+    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
+    live_radio.grid(row=0, column=0, sticky="w")
+
     # List to store entry widgets for source and destination information
     entries = []
 
@@ -201,23 +203,20 @@ def main():
         entry.grid(row=i+1, column=3, sticky="ew")
         entries.append(entry)  # Continue appending each entry widget
 
-    # Radio buttons for selecting data source
-    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
-    live_radio.grid(row=0, column=0, sticky="w")
+    # Radio button for file data and entry for file selection
     file_radio = tk.Radiobutton(field_frame, text="File Data", variable=src_type, value="file")
-    file_radio.grid(row=0, column=1, sticky="w")
-
-    # Entry and browse button for file selection
+    file_radio.grid(row=5, column=0, sticky="w", pady=20)
     file_entry = tk.Entry(field_frame)
-    file_entry.grid(row=1, column=1, sticky="ew", columnspan=2)
+    file_entry.grid(row=5, column=1, sticky="ew", columnspan=2, pady=20)
+
     browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
-    browse_button.grid(row=1, column=3)
+    browse_button.grid(row=5, column=3)
 
-    # Button to initiate the migration
+    # Migrate button with conditional action based on source type
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
-    btn_migrate.grid(row=2, column=0, columnspan=4, pady=20)
+    btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
 
-    # Frame for the About and Exit buttons
+    # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
 
