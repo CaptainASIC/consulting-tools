@@ -8,7 +8,7 @@ from base64 import b64encode
 # Define app version in a variable
 app_version = "1.0.4"
 
-src_type = tk.StringVar(value="live") 
+def get_apsrc_type = tk.StringVar(value="live") 
 
 def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
@@ -133,7 +133,7 @@ def migrate_action():
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), clean_file)
 
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
@@ -173,23 +173,24 @@ def main():
     root.geometry("640x480")
     root.resizable(False, False)
 
+    # Initialize the variable for choosing data source after creating the root window
+    src_type = tk.StringVar(value="live")
+
     # Frame for the fields
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
-    # Radio button for live data
-    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
-    live_radio.grid(row=0, column=0, sticky="w")
+    # List to store entry widgets for source and destination information
+    entries = []
 
     # Labels and entries for source information
     source_labels = ["Source IP/FQDN:", "Source Username:", "Source Password:"]
-    entries = []
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(field_frame, text=label)
         label_widget.grid(row=i+1, column=0, sticky="e")
         entry = tk.Entry(field_frame)
         entry.grid(row=i+1, column=1, sticky="ew")
-        entries.append(entry)
+        entries.append(entry)  # Append each entry widget to the list
 
     # Labels and entries for destination information
     dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:"]
@@ -198,25 +199,28 @@ def main():
         label_widget.grid(row=i+1, column=2, sticky="e")
         entry = tk.Entry(field_frame)
         entry.grid(row=i+1, column=3, sticky="ew")
-        entries.append(entry)
+        entries.append(entry)  # Continue appending each entry widget
 
-    # Radio button for file data and related fields
+    # Radio buttons for selecting data source
+    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
+    live_radio.grid(row=0, column=0, sticky="w")
     file_radio = tk.Radiobutton(field_frame, text="File Data", variable=src_type, value="file")
-    file_radio.grid(row=5, column=0, sticky="w", rowspan=2, pady=20)
+    file_radio.grid(row=0, column=1, sticky="w")
+
+    # Entry and browse button for file selection
     file_entry = tk.Entry(field_frame)
-    file_entry.grid(row=5, column=1, sticky="ew", columnspan=2, rowspan=2,pady=20)
+    file_entry.grid(row=1, column=1, sticky="ew", columnspan=2)
     browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
-    browse_button.grid(row=5, column=3, pady=20)
+    browse_button.grid(row=1, column=3)
 
-    # Migrate button with conditional action based on source type
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=migrate_action)
-    btn_migrate.grid(row=7, column=0, columnspan=5, pady=20)
+    # Button to initiate the migration
+    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
+    btn_migrate.grid(row=2, column=0, columnspan=4, pady=20)
 
-    # Frame for the buttons at the bottom
+    # Frame for the About and Exit buttons
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
 
-    # About and Exit buttons using pack within the frame
     btn_about = tk.Button(button_frame, text="About", command=show_about)
     btn_about.pack(side='left', anchor='sw')
 
