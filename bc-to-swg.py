@@ -135,7 +135,6 @@ def migrate_action():
         cleaned_file = clean_and_save_routes(source_file)
         post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
 
-
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
     if filename:
