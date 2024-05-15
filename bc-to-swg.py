@@ -23,7 +23,7 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         from xml.etree import ElementTree as ET
         root = ET.fromstring(response.content)
-        uuid = root.find('.//id').text
+        uuid = root.find('.//entry/id').text
 
         # Display a popup with the UUID
         messagebox.showinfo("UUID Retrieved", f"Current System UUID: {uuid}")
@@ -80,6 +80,22 @@ def clean_and_save_routes(filename):
     messagebox.showinfo("Info", f"Cleaned static routes have been saved to {cleaned_filename}.")
     return cleaned_filename
 
+def get_network_routes(dest_ip, dest_user, dest_pass):
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+    if not uuid:
+        messagebox.showerror("Error", "Failed to get UUID for GET test.")
+        return
+
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header}
+    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+
+    try:
+        response = requests.get(route_url, headers=headers, verify=False)
+        response.raise_for_status()
+        messagebox.showinfo("GET Test", f"Current Network Routes:\n{response.text}")
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
 
 
 def post_routes(dest_ip, dest_user, dest_pass, filename):
@@ -223,6 +239,10 @@ def main():
     # Migrate button with conditional action based on source type
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
+
+    # Add a button for performing the GET test
+    btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
+    btn_get_test.grid(row=8, column=5, pady=20)
 
     # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
