@@ -123,7 +123,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
 
 
-def migrate_action():
+def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         cleaned_file = clean_and_save_routes(file_entry.get())
         post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
