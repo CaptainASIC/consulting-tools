@@ -11,10 +11,10 @@ app_version = "1.0.4"
 def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header}
-    url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances"
+    url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances"
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, verify=False)
         response.raise_for_status()
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         from xml.etree import ElementTree as ET
@@ -104,19 +104,19 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                 </listEntry>'''
         xml_payload += '</list></content></entry>'
 
-        route_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+        route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
         
         # Post static routes
-        response = requests.post(route_url, headers=headers, data=xml_payload)
+        response = requests.post(route_url, headers=headers, verify=False)
         response.raise_for_status()
         
         # Commit changes
-        commit_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
-        requests.post(commit_url, headers=headers).raise_for_status()
+        commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
+        requests.post(commit_url, headers=headers, verify=False).raise_for_status()
         
         # Logout
-        logout_url = f"http://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
-        requests.post(logout_url, headers=headers).raise_for_status()
+        logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
+        requests.post(logout_url, headers=headers, verify=False).raise_for_status()
 
         messagebox.showinfo("Success", "Routes have been posted and committed to the SWG, and logout was successful.")
     except requests.exceptions.RequestException as e:
