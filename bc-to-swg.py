@@ -94,6 +94,12 @@ def get_network_routes(dest_ip, dest_user, dest_pass):
         response = requests.get(route_url, headers=headers, verify=False)
         response.raise_for_status()
         messagebox.showinfo("GET Test", f"Current Network Routes:\n{response.text}")
+        
+        # Save the XML to a file
+        with open('current_network_routes.xml', 'w') as file:
+            file.write(routes_xml)
+        messagebox.showinfo("File Saved", "The current network routes have been saved to 'current_network_routes.xml'.")
+
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
 
