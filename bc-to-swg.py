@@ -103,6 +103,28 @@ def get_network_routes(dest_ip, dest_user, dest_pass):
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
 
+def build_xml_payload(filename):
+    with open(filename, "r") as file:
+        lines = file.readlines()
+    
+    xml_entries = ''
+    for line in lines:
+        parts = line.strip().split(',')
+        if len(parts) >= 2:  # Ensure at least two parts are available
+            destination = parts[0].strip()
+            gateway = parts[1].strip()
+            xml_entries += f'''
+            &lt;listEntry&gt;
+                &lt;complexEntry&gt;
+                    &lt;configurationProperties&gt;
+                        &lt;configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{destination}"/&gt;
+                        &lt;configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{gateway}"/&gt;
+                        &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/&gt;
+                        &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
+                    &lt;/configurationProperties&gt;
+                &lt;/complexEntry&gt;
+            &lt;/listEntry&gt;'''
+    return f'&lt;list&gt;{xml_entries}&lt;/list&gt;'
 
 def post_routes(dest_ip, dest_user, dest_pass, filename):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
@@ -112,47 +134,19 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
+    xml_payload = build_xml_payload(filename)  # Build XML from CSV file data
+    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+
     try:
-        with open(filename, "r") as file:
-            lines = file.readlines()
-        
-        xml_payload = '<entry><content type="application/xml"><list>'
-        for line in lines:
-            parts = line.strip().split(',')
-            if len(parts) >= 2:
-                xml_payload += f'''
-                    &lt;listEntry&gt;
-                        &lt;complexEntry defaultRights=&quot;2&quot;&gt;
-                            &lt;configurationProperties&gt;
-                            &lt;configurationProperty key=&quot;network.routes.destination&quot; type=&quot;com.scur.type.string&quot; value=&quot;{parts[0]}&quot;/&gt;
-                            &lt;configurationProperty key=&quot;network.routes.gateway&quot; type=&quot;com.scur.type.string&quot; value=&quot;{parts[1]}&quot;/&gt;
-                            &lt;configurationProperty key=&quot;network.routes.device&quot; type=&quot;com.scur.type.string&quot; value=&quot;eth0&quot;/&gt;
-                            &lt;configurationProperty key=&quot;network.routes.description&quot; type=&quot;com.scur.type.string&quot; value=&quot;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&quot;/&gt;
-                            &lt;/configurationProperties&gt;
-                        &lt;/complexEntry&gt;
-                        &lt;description&gt;&lt;/description&gt;
-                        &lt;/listEntry&gt;'''
-
-        xml_payload += '</list></content></entry>'
-
-        route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-        # Post Static Routes
         response = requests.put(route_url, headers=headers, data=xml_payload, verify=False)
-        if response.status_code == 405:
-            raise Exception("Method Not Allowed - Check if PUT is allowed for this endpoint.")
         response.raise_for_status()
-        # Commit Changes
         commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
         requests.post(commit_url, headers=headers, verify=False).raise_for_status()
-        # Log out of API
         logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
         requests.post(logout_url, headers=headers, verify=False).raise_for_status()
-        # Finished
-        messagebox.showinfo("Success", "Routes have been posted and committed to the SWG, and logout was successful.")
+        messagebox.showinfo("Success", "Routes have been updated and committed to the SWG.")
     except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to communicate with the destination device: Detailed Error: {e.response.text if e.response else 'No response text'}")
-
-
+        messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
 
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
