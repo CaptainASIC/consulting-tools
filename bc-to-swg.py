@@ -97,7 +97,7 @@ def get_network_routes(dest_ip, dest_user, dest_pass):
         
         # Save the XML to a file
         with open('current_network_routes.xml', 'w') as file:
-            file.write(routes_xml)
+            file.write(response.text)
         messagebox.showinfo("File Saved", "The current network routes have been saved to 'current_network_routes.xml'.")
 
     except requests.exceptions.RequestException as e:
@@ -121,16 +121,18 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
             parts = line.strip().split(',')
             if len(parts) >= 2:
                 xml_payload += f'''
-                <listEntry>
-                    <complexEntry>
-                        <configurationProperties>
-                            <configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/>
-                            <configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/>
-                            <configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/>
-                            <configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/>
-                        </configurationProperties>
-                    </complexEntry>
-                </listEntry>'''
+                    &lt;listEntry&gt;
+                        &lt;complexEntry defaultRights=&quot;2&quot;&gt;
+                            &lt;configurationProperties&gt;
+                            &lt;configurationProperty key=&quot;network.routes.destination&quot; type=&quot;com.scur.type.string&quot; value=&quot;{parts[0]}&quot;/&gt;
+                            &lt;configurationProperty key=&quot;network.routes.gateway&quot; type=&quot;com.scur.type.string&quot; value=&quot;{parts[1]}&quot;/&gt;
+                            &lt;configurationProperty key=&quot;network.routes.device&quot; type=&quot;com.scur.type.string&quot; value=&quot;eth0&quot;/&gt;
+                            &lt;configurationProperty key=&quot;network.routes.description&quot; type=&quot;com.scur.type.string&quot; value=&quot;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&quot;/&gt;
+                            &lt;/configurationProperties&gt;
+                        &lt;/complexEntry&gt;
+                        &lt;description&gt;&lt;/description&gt;
+                        &lt;/listEntry&gt;'''
+
         xml_payload += '</list></content></entry>'
 
         route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
