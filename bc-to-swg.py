@@ -117,10 +117,10 @@ def build_xml_payload(filename):
             &lt;listEntry&gt;
                 &lt;complexEntry&gt;
                     &lt;configurationProperties&gt;
-                        &lt;configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{destination}"/&gt;
-                        &lt;configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{gateway}"/&gt;
-                        &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/&gt;
-                        &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
+                        &lt;configurationProperty key=&quot;network.routes.destination&quot; type=&quot;com.scur.type.string&quot; value=&quot;{destination}&quot;/&gt;
+                        &lt;configurationProperty key=&quot;network.routes.gateway&quot; type=&quot;com.scur.type.string&quot; value=&quot;{gateway}&quot;/&gt;
+                        &lt;configurationProperty key=&quot;network.routes.device&quot; type=&quot;com.scur.type.string&quot; value=&quot;eth0&quot;/&gt;
+                        &lt;configurationProperty key=&quot;network.routes.description&quot; type=&quot;com.scur.type.string&quot; value=&quot;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&quot;/&gt;
                     &lt;/configurationProperties&gt;
                 &lt;/complexEntry&gt;
             &lt;/listEntry&gt;'''
