@@ -126,10 +126,10 @@ def build_xml_payload(filename,uuid):
             &lt;/listEntry&gt;'''
     return f'&lt;entry&gt;&lt;link href="http://172.27.96.232:4711/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4" rel="self"/&gt;&lt;content&gt;&lt;list version=&quot;1.0.3.45&quot; mwg-version=&quot;7.6.0-20035&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&lt;description&gt;&lt;/description&gt;&lt;content&gt;&lt;list&gt;{xml_entries}&lt;/list&gt;&lt;/content&gt;&lt;/entry&gt;'
 
-def post_routes(dest_ip, dest_user, dest_pass, filename, uuid):
+def post_routes(dest_ip, dest_user, dest_pass, filename):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
     if not uuid:
-        return  # Stop if UUID could not be retrieved
+        return  # Stop if UUID could not be retrieveds
 
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
@@ -149,16 +149,16 @@ def post_routes(dest_ip, dest_user, dest_pass, filename, uuid):
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
 
-def migrate_action(src_type, entries, file_entry, uuid):
+def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get(), uuid)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file, uuid)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
 
 
 def choose_file(entry):
@@ -193,7 +193,7 @@ def show_about():
     text_widget.configure(state="disabled", padx=10, pady=10)
     text_widget.pack(expand=True, fill='both')
 
-def main(uuid):
+def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("640x480")
@@ -241,7 +241,7 @@ def main(uuid):
     browse_button.grid(row=5, column=3)
 
     # Migrate button with conditional action based on source type
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry, uuid))
+    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
 
     # Add a button for performing the GET test
