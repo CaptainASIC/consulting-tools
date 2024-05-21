@@ -27,7 +27,7 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
         uuid = root.find('.//entry/id').text
 
         # Display a popup with the UUID
-        messagebox.showinfo("UUID Retrieved", f"Current System UUID: {uuid}")
+        #messagebox.showinfo("UUID Retrieved", f"Current System UUID: {uuid}")
 
         return uuid
     except Exception as e:
@@ -146,7 +146,11 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                     </listEntry>'''
         # Insert new entries before </content></entry>
         modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}</content></entry>')
-
+       
+        # Save the modified XML locally for testing
+        with open('new_routes.xml', 'w') as new_xml_file:
+            new_xml_file.write(modified_xml)
+            
         # Step 3: Upload the modified XML
         response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         response.raise_for_status()
