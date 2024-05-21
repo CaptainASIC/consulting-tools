@@ -149,16 +149,16 @@ def post_routes(dest_ip, dest_user, dest_pass, filename, uuid):
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
 
-def migrate_action(src_type, entries, file_entry):
+def migrate_action(src_type, entries, file_entry, uuid):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get(), uuid)
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file, uuid)
 
 
 def choose_file(entry):
