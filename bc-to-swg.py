@@ -124,7 +124,7 @@ def build_xml_payload(filename):
                     &lt;/configurationProperties&gt;
                 &lt;/complexEntry&gt;
             &lt;/listEntry&gt;'''
-    return f'&lt;list&gt;{xml_entries}&lt;/list&gt;'
+    return f'&lt;list&gt;{xml_entries}&lt;/list&gt;&lt;/content&gt;&lt;/entry&gt;'
 
 def post_routes(dest_ip, dest_user, dest_pass, filename):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
@@ -135,6 +135,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
     xml_payload = build_xml_payload(filename)  # Build XML from CSV file data
+    messagebox.showinfo({xml_payload})
     route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
 
     try:
