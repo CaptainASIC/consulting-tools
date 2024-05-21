@@ -134,7 +134,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename, uuid):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
-    xml_payload = build_xml_payload(filename)  # Build XML from CSV file data
+    xml_payload = build_xml_payload(filename, uuid)  # Build XML from CSV file data
     messagebox.showinfo({xml_payload})
     route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
 
