@@ -4,6 +4,7 @@ import subprocess
 import requests
 import webbrowser
 from base64 import b64encode
+import configparser
 
 # Define app version in a variable
 app_version = "1.0.4"
@@ -107,47 +108,61 @@ def build_xml_payload(filename,uuid):
     with open(filename, "r") as file:
         lines = file.readlines()
     
-    xml_entries = ''
-    for line in lines:
-        parts = line.strip().split(',')
-        if len(parts) >= 2:  # Ensure at least two parts are available
-            destination = parts[0].strip()
-            gateway = parts[1].strip()
-            xml_entries += f'''
-            &lt;listEntry&gt;
-                &lt;complexEntry&gt;
-                    &lt;configurationProperties&gt;
-                        &lt;configurationProperty key=&quot;network.routes.destination&quot; type=&quot;com.scur.type.string&quot; value=&quot;{destination}&quot;/&gt;
-                        &lt;configurationProperty key=&quot;network.routes.gateway&quot; type=&quot;com.scur.type.string&quot; value=&quot;{gateway}&quot;/&gt;
-                        &lt;configurationProperty key=&quot;network.routes.device&quot; type=&quot;com.scur.type.string&quot; value=&quot;eth0&quot;/&gt;
-                        &lt;configurationProperty key=&quot;network.routes.description&quot; type=&quot;com.scur.type.string&quot; value=&quot;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&quot;/&gt;
-                    &lt;/configurationProperties&gt;
-                &lt;/complexEntry&gt;
-            &lt;/listEntry&gt;'''
-    return f'&lt;entry&gt;&lt;link href="http://172.27.96.232:4711/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4" rel="self"/&gt;&lt;content&gt;&lt;list version=&quot;1.0.3.45&quot; mwg-version=&quot;7.6.0-20035&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&lt;description&gt;&lt;/description&gt;&lt;content&gt;&lt;list&gt;{xml_entries}&lt;/list&gt;&lt;/content&gt;&lt;/entry&gt;'
-
 def post_routes(dest_ip, dest_user, dest_pass, filename):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
     if not uuid:
-        return  # Stop if UUID could not be retrieveds
+        return  # Stop if UUID could not be retrieved
 
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
 
-    xml_payload = build_xml_payload(filename, uuid)  # Build XML from CSV file data
-    messagebox.showinfo({xml_payload})
+    # Step 1: Fetch existing routes
     route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-
     try:
-        response = requests.put(route_url, headers=headers, data=xml_payload, verify=False)
+        response = requests.get(route_url, headers=headers, verify=False)
+        existing_xml = response.text
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to fetch existing routes: {e}")
+        return
+
+    # Step 2: Modify the XML with new routes
+    try:
+        with open(filename, "r") as file:
+            new_routes = file.readlines()
+        new_entries = ''
+        for line in new_routes:
+            parts = line.strip().split(',')
+            if len(parts) >= 2:
+                new_entries += f'''
+                    <listEntry>
+                        <complexEntry>
+                            <configurationProperties>
+                                <configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/>
+                                <configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/>
+                                <configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/>
+                                <configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/>
+                            </configurationProperties>
+                        </complexEntry>
+                    </listEntry>'''
+        # Insert new entries before </content></entry>
+        modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}</content></entry>')
+
+        # Step 3: Upload the modified XML
+        response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         response.raise_for_status()
+
+        # Commit changes
         commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
         requests.post(commit_url, headers=headers, verify=False).raise_for_status()
+
+        # Logout
         logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
         requests.post(logout_url, headers=headers, verify=False).raise_for_status()
-        messagebox.showinfo("Success", "Routes have been updated and committed to the SWG.")
+
+        messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.")
     except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to communicate with the destination device: {e}")
+        messagebox.showerror("Error", f"Failed to update routes: {e}")
+
 
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
@@ -193,6 +208,32 @@ def show_about():
     text_widget.configure(state="disabled", padx=10, pady=10)
     text_widget.pack(expand=True, fill='both')
 
+def save_config(entries, file_entry):
+    config = configparser.ConfigParser()
+    
+    # Assuming entries are in the order: [source IP, source Username, source Password, dest IP, dest Username, dest Password]
+    config['SOURCE'] = {
+        'IP': entries[0].get(),
+        'Username': entries[1].get(),
+        'Password': entries[2].get()
+    }
+    config['DESTINATION'] = {
+        'IP': entries[3].get(),
+        'Username': entries[4].get(),
+        'Password': entries[5].get()
+    }
+    config['FILE'] = {
+        'Path': file_entry.get()
+    }
+    
+    with open('last.cfg', 'w') as configfile:
+        config.write(configfile)
+    messagebox.showinfo("Configuration Saved", "Configuration has been saved to 'last.cfg'.")
+
+def on_exit(entries, file_entry, root):
+    save_config(entries, file_entry)
+    root.quit()
+
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
@@ -212,6 +253,7 @@ def main():
 
     # List to store entry widgets for source and destination information
     entries = []
+    file_entry = tk.Entry(field_frame)
 
     # Labels and entries for source information
     source_labels = ["Source IP/FQDN:", "Source Username:", "Source Password:"]
@@ -255,7 +297,7 @@ def main():
     btn_about = tk.Button(button_frame, text="About", command=show_about)
     btn_about.pack(side='left', anchor='sw')
 
-    btn_exit = tk.Button(button_frame, text="Exit", command=root.quit)
+    btn_exit = tk.Button(button_frame, text="Exit", command=lambda: on_exit(entries, file_entry, root))
     btn_exit.pack(side='right', anchor='se')
 
     root.mainloop()
