@@ -162,7 +162,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                         &lt;/complexEntry&gt;
                     &lt;/listEntry&gt;'''
         # Insert new entries before </content></entry>
-        modified_xml = existing_xml.replace('&lt;/content&gt;&lt;/list&gt;</content></entry>', f'{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+        modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
        
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
