@@ -193,7 +193,7 @@ def show_about():
     text_widget.configure(state="disabled", padx=10, pady=10)
     text_widget.pack(expand=True, fill='both')
 
-def main():
+def main(uuid):
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("640x480")
@@ -241,7 +241,7 @@ def main():
     browse_button.grid(row=5, column=3)
 
     # Migrate button with conditional action based on source type
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
+    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry, uuid))
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
 
     # Add a button for performing the GET test
