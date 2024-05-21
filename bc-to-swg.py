@@ -151,18 +151,18 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
             parts = line.strip().split(',')
             if len(parts) >= 2:
                 new_entries += f'''
-                    <listEntry>
-                        <complexEntry>
-                            <configurationProperties>
-                                <configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/>
-                                <configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/>
-                                <configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/>
-                                <configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/>
-                            </configurationProperties>
-                        </complexEntry>
-                    </listEntry>'''
+                    &lt;listEntry&gt;
+                        &lt;complexEntry&gt;
+                            &lt;configurationProperties&gt;
+                                &lt;configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/&gt;
+                                &lt;configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/&gt;
+                                &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/&gt;
+                                &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
+                            &lt;/configurationProperties&gt;
+                        &lt;/complexEntry&gt;
+                    &lt;/listEntry&gt;'''
         # Insert new entries before </content></entry>
-        modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}</content></entry>')
+        modified_xml = existing_xml.replace('&lt;/content&gt;&lt;/list&gt;</content></entry>', f'{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
        
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
