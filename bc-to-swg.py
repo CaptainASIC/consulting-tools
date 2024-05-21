@@ -9,6 +9,23 @@ import configparser
 # Define app version in a variable
 app_version = "1.0.4"
 
+def load_config(entries, file_entry):
+    config = configparser.ConfigParser()
+    config.read('last.cfg')
+
+    if 'SOURCE' in config:
+        entries[0].insert(0, config['SOURCE'].get('IP', ''))
+        entries[1].insert(0, config['SOURCE'].get('Username', ''))
+        entries[2].insert(0, config['SOURCE'].get('Password', ''))
+
+    if 'DESTINATION' in config:
+        entries[3].insert(0, config['DESTINATION'].get('IP', ''))
+        entries[4].insert(0, config['DESTINATION'].get('Username', ''))
+        entries[5].insert(0, config['DESTINATION'].get('Password', ''))
+
+    if 'FILE' in config:
+        file_entry.insert(0, config['FILE'].get('Path', ''))
+
 def get_appliance_uuid(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header}
@@ -150,7 +167,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
-            
+
         # Step 3: Upload the modified XML
         response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         response.raise_for_status()
@@ -304,6 +321,9 @@ def main():
     btn_exit = tk.Button(button_frame, text="Exit", command=lambda: on_exit(entries, file_entry, root))
     btn_exit.pack(side='right', anchor='se')
 
+    # Load config if exists
+    load_config(entries, file_entry)
+    
     root.mainloop()
 
 if __name__ == "__main__":
