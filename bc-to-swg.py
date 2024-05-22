@@ -172,15 +172,15 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         #response.raise_for_status()
 
-        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -H 'Content-Type: application/xml' --data-binary @{new_xml_file.name} {route_url}"
+        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -H 'Content-Type: application/xml' -d @{new_xml_file.name} {route_url}"
         subprocess.run(curl_command, shell=True)
         
         # Commit changes
-        commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/commit"
+        commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/commit"
         requests.post(commit_url, headers=headers, verify=False).raise_for_status()
 
         # Logout
-        logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/logout"
+        logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/logout"
         requests.post(logout_url, headers=headers, verify=False).raise_for_status()
 
         messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.")
