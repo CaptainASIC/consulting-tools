@@ -172,7 +172,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         #response.raise_for_status()
 
-        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -H 'Content-Type: application/atom+xml' --data-binary @{new_xml_file.name} {route_url}"
+        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -H 'Content-Type: application/xml' --data-binary @{new_xml_file.name} {route_url}"
         subprocess.run(curl_command, shell=True)
         
         # Commit changes
