@@ -5,6 +5,7 @@ import requests
 import webbrowser
 from base64 import b64encode
 import configparser
+import re
 
 # Define app version in a variable
 app_version = "1.0.4"
@@ -161,6 +162,9 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                             &lt;/configurationProperties&gt;
                         &lt;/complexEntry&gt;
                     &lt;/listEntry&gt;'''
+                
+        # Remove <link> tag using regex
+        modified_xml = re.sub(r'<link .*?>', '', existing_xml)
         # Insert new entries before </content></entry>
         modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
        
@@ -172,7 +176,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         #response.raise_for_status()
 
-        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -H 'Content-Type: application/xml' -d @{new_xml_file.name} {route_url}"
+        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H 'Content-Type: application/xml'"
         subprocess.run(curl_command, shell=True)
         
         # Commit changes
