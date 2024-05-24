@@ -132,7 +132,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         return  # Stop if UUID could not be retrieved
 
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
-    headers = {"Authorization": auth_header, "Content-Type": "application/atom+xml"}
+    headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
 
     # Step 1: Fetch existing routes
     route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
@@ -166,8 +166,9 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         # Remove <link> tag using regex
         modified_xml = re.sub(r'<link .*?>', '', existing_xml)
         # Insert new entries before </content></entry>
-        modified_xml = existing_xml.replace('</content></entry>', f'{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
-       
+        modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&lt;description&gt;&lt;/description&gt;&lt;content&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+
+
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
@@ -176,7 +177,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
         #response.raise_for_status()
 
-        curl_command = f"curl -k -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H 'Content-Type: application/xml'"
+        curl_command = f'curl -k -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
         subprocess.run(curl_command, shell=True)
         
         # Commit changes
