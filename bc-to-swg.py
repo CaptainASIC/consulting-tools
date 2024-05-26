@@ -174,19 +174,23 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
             new_xml_file.write(modified_xml)
 
         # Step 3: Upload the modified XML
-        response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
-        response.raise_for_status()
-
-        #curl_command = f'curl -k -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
-        #subprocess.run(curl_command, shell=True)
+        #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
+        #response.raise_for_status()
+        curl_command = f'curl -k -c cookies.txt -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
+        subprocess.run(curl_command, shell=True)
         
         # Commit changes
-        commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/commit"
-        requests.post(commit_url, headers=headers, verify=False).raise_for_status()
+        #commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/commit"
+        #requests.post(commit_url, headers=headers, verify=False).raise_for_status()
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/commit'
+        subprocess.run(curl_command, shell=True)
 
         # Logout
-        logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/logout"
-        requests.post(logout_url, headers=headers, verify=False).raise_for_status()
+        #logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/logout"
+        #requests.post(logout_url, headers=headers, verify=False).raise_for_status()
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/logout'
+        subprocess.run(curl_command, shell=True)
+
 
         messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.")
     except requests.exceptions.RequestException as e:
