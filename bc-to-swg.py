@@ -8,7 +8,7 @@ import configparser
 import re
 
 # Define app version in a variable
-app_version = "1.0.4"
+app_version = "1.0.5"
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
