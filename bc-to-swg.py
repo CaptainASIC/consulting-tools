@@ -8,7 +8,7 @@ import configparser
 import re
 
 # Define app version in a variable
-app_version = "1.0.5"
+app_version = "1.0.6"
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -318,6 +318,10 @@ def main():
     # Migrate button with conditional action based on source type
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
+
+    # Button to fetch BC routes
+    btn_fetch_bc = tk.Button(field_frame, text="Fetch BC Routes", command=lambda: fetch_static_routes(entries))
+    btn_fetch_bc.grid(row=7, column=1, pady=20)
 
     # Add a button for performing the GET test
     btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
