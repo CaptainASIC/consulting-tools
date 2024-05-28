@@ -181,12 +181,13 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                                 &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
                             &lt;/configurationProperties&gt;
                         &lt;/complexEntry&gt;
+                        &lt;description&gt;&lt;/description&gt;
                     &lt;/listEntry&gt;'''
                 
         # Remove <link> tag using regex
         modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
         # Insert new entries before </content></entry>
-        modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&lt;description&gt;&lt;/description&gt;&lt;content&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+        modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
 
 
         # Save the modified XML locally for testing
