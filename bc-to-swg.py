@@ -89,7 +89,7 @@ def clean_and_save_routes(filename):
         lines = file.readlines()
 
     start_cleaning = False
-    cleaned_lines = []
+    cleaned_data = []
 
     for line in lines:
         if "default" in line:
@@ -98,14 +98,20 @@ def clean_and_save_routes(filename):
             break  # Break the loop if "Internet6:" appears (stop capturing)
 
         if start_cleaning:
-            cleaned_lines.append(line)  # Append lines within the range
+            # Assuming the format "destination gateway flags refs use netif expi"
+            parts = line.split()
+            if len(parts) > 1:  # To ensure there's at least destination and gateway
+                destination = parts[0]
+                gateway = parts[1]
+                cleaned_data.append(f"{destination},{gateway}")
 
-    # Assuming the new file name is the original with '_cleaned' appended before '.csv'
+    # Assuming the new file name is the original with '_cleaned.csv'
     cleaned_filename = filename.replace('.csv', '_cleaned.csv')
 
     # Write the cleaned data to a new file
     with open(cleaned_filename, "w") as file:
-        file.writelines(cleaned_lines)
+        for entry in cleaned_data:
+            file.write(entry + "\n")
 
     messagebox.showinfo("Info", f"Cleaned static routes have been saved to {cleaned_filename}.")
     return cleaned_filename
@@ -212,6 +218,7 @@ def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
         #post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
+        temp = "temp"
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
