@@ -192,7 +192,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         subprocess.run(curl_command, shell=True)
 
 
-        messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.")
+        messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to update routes: {e}")
 
@@ -200,13 +200,13 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
+        #post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
+        #post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
 
 
 def choose_file(entry):
@@ -319,13 +319,9 @@ def main():
     btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
 
-    # Button to fetch BC routes
-    btn_fetch_bc = tk.Button(field_frame, text="Fetch BC Routes", command=lambda: fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv"))
-    btn_fetch_bc.grid(row=7, column=1, pady=20)
-
     # Add a button for performing the GET test
-    btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
-    btn_get_test.grid(row=7, column=3, pady=20)
+    #btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
+    #btn_get_test.grid(row=7, column=3, pady=20)
 
     # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
