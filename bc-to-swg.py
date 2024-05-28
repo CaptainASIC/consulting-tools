@@ -9,7 +9,7 @@ import re
 import paramiko
 
 # Define app version in a variable
-app_version = "1.0.6"
+app_version = "2.0.0"
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -116,7 +116,7 @@ def clean_and_save_routes(filename):
         for entry in cleaned_data:
             file.write(entry + "\n")
 
-    messagebox.showinfo("Info", f"Cleaned static routes have been saved to {cleaned_filename}.")
+    messagebox.showinfo("Info", f"Cleaned BlueCoat static routes have been saved to {cleaned_filename}.")
     return cleaned_filename
 
 def get_network_routes(dest_ip, dest_user, dest_pass):
@@ -132,12 +132,12 @@ def get_network_routes(dest_ip, dest_user, dest_pass):
     try:
         response = requests.get(route_url, headers=headers, verify=False)
         response.raise_for_status()
-        messagebox.showinfo("GET Test", f"Current Network Routes:\n{response.text}")
+        messagebox.showinfo("GET Test", f"Current SWG Network Routes:\n{response.text}")
         
         # Save the XML to a file
         with open('current_network_routes.xml', 'w') as file:
             file.write(response.text)
-        messagebox.showinfo("File Saved", "The current network routes have been saved to 'current_network_routes.xml'.")
+        messagebox.showinfo("File Saved", "The current SWG network routes have been saved to 'current_network_routes.xml'.")
 
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
@@ -163,7 +163,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
         messagebox.showerror("Error", f"Failed to fetch existing routes: {e}")
         return
 
-    # Step 2: Modify the XML with new routes
+        # Step 2: Modify the XML with new routes
     try:
         with open(filename, "r") as file:
             new_routes = file.readlines()
@@ -180,16 +180,17 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                                 &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/&gt;
                                 &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
                             &lt;/configurationProperties&gt;
-                        &lt;/complexEntry&gt;
-                        &lt;description&gt;&lt;/description&gt;
-                    &lt;/listEntry&gt;'''
-                
+                        &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
+               
         # Remove <link> tag using regex
         modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
         # Insert new entries before </content></entry>
-        modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
-
-
+        #modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+        modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
+  &lt;description&gt;&lt;/description&gt;
+  &lt;content&gt;{new_entries}
+  &lt;/content&gt;&lt;/list&gt;</content></entry>
+            '''
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
