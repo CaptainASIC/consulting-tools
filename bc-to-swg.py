@@ -6,6 +6,7 @@ import webbrowser
 from base64 import b64encode
 import configparser
 import re
+import paramiko
 
 # Define app version in a variable
 app_version = "1.0.6"
@@ -54,14 +55,21 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
 
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
     try:
-        command = f"ssh {username}@{source_ip} 'show static-routes'"
-        proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        output, errors = proc.communicate()
-
-        if proc.returncode != 0:
+        # Connect to the host using username and password
+        client.connect(source_ip, username=username, password=password, timeout=10)
+        
+        # Run the command to get static routes
+        stdin, stdout, stderr = client.exec_command("show static-routes")
+        output = stdout.read().decode()
+        errors = stderr.read().decode()
+        
+        # Check for errors and write output to file
+        if errors:
             raise Exception(errors)
-
         with open(filename, "w") as f:
             f.write(output)
 
@@ -71,6 +79,9 @@ def fetch_static_routes(source_ip, username, password, filename):
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
 
 def clean_and_save_routes(filename):
     # Read the output and apply cleaning
