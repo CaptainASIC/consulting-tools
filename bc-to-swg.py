@@ -320,7 +320,7 @@ def main():
     btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
 
     # Button to fetch BC routes
-    btn_fetch_bc = tk.Button(field_frame, text="Fetch BC Routes", command=lambda: fetch_static_routes(entries))
+    btn_fetch_bc = tk.Button(field_frame, text="Fetch BC Routes", command=lambda: fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), f"{entries[0].get()}.csv"))
     btn_fetch_bc.grid(row=7, column=1, pady=20)
 
     # Add a button for performing the GET test
