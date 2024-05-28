@@ -184,7 +184,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                     &lt;/listEntry&gt;'''
                 
         # Remove <link> tag using regex
-        modified_xml = re.sub(r'<link .*?>', '', existing_xml)
+        modified_xml = re.sub(r'<link\s+.*?>', '', existing_xml, flags=re.DOTALL)
         # Insert new entries before </content></entry>
         modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&lt;description&gt;&lt;/description&gt;&lt;content&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
 
