@@ -98,6 +98,9 @@ def clean_and_save_routes(filename):
             break  # Break the loop if "Internet6:" appears (stop capturing)
 
         if start_cleaning:
+            # Avoid lines that start with specific words
+            if line.startswith(("Routing", "Destination", "default")):
+                continue  # Skip lines starting with these words
             # Assuming the format "destination gateway flags refs use netif expi"
             parts = line.split()
             if len(parts) > 1:  # To ensure there's at least destination and gateway
