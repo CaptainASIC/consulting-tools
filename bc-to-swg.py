@@ -220,14 +220,14 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        #post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
-        temp = "temp"
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
+
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        #post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
 
 
 def choose_file(entry):
