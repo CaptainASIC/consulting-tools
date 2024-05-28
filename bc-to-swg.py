@@ -8,8 +8,7 @@ import configparser
 import re
 import paramiko
 
-# Define app version in a variable
-app_version = "2.0.0"
+app_version = "2.0.1"
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -24,7 +23,7 @@ def load_config(entries, file_entry):
         entries[3].insert(0, config['DESTINATION'].get('IP', ''))
         entries[4].insert(0, config['DESTINATION'].get('Username', ''))
         entries[5].insert(0, config['DESTINATION'].get('Password', ''))
-
+        entries[6].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
     if 'FILE' in config:
         file_entry.insert(0, config['FILE'].get('Path', ''))
 
@@ -146,7 +145,7 @@ def build_xml_payload(filename,uuid):
     with open(filename, "r") as file:
         lines = file.readlines()
     
-def post_routes(dest_ip, dest_user, dest_pass, filename):
+def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
     if not uuid:
         return  # Stop if UUID could not be retrieved
@@ -177,7 +176,7 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
                             &lt;configurationProperties&gt;
                                 &lt;configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/&gt;
                                 &lt;configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/&gt;
-                                &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="eth0"/&gt;
+                                &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="{dest_interface}"/&gt;
                                 &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
                             &lt;/configurationProperties&gt;
                         &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
@@ -222,14 +221,14 @@ def post_routes(dest_ip, dest_user, dest_pass, filename):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), file_entry.get())
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), file_entry.get())
 
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), cleaned_file)
+        post_routes(entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), cleaned_file)
 
 
 def choose_file(entry):
@@ -276,7 +275,8 @@ def save_config(entries, file_entry):
     config['DESTINATION'] = {
         'IP': entries[3].get(),
         'Username': entries[4].get(),
-        'Password': entries[5].get()
+        'Password': entries[5].get(),
+        'Interface': entries[6].get()
     }
     config['FILE'] = {
         'Path': file_entry.get()
@@ -321,13 +321,15 @@ def main():
         entries.append(entry)  # Append each entry widget to the list
 
     # Labels and entries for destination information
-    dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:"]
+    dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:", "Destination Interface:"]
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(field_frame, text=label)
         label_widget.grid(row=i+1, column=2, sticky="e")
         entry = tk.Entry(field_frame)
         entry.grid(row=i+1, column=3, sticky="ew")
         entries.append(entry)  # Continue appending each entry widget
+    
+    entries[6].insert(0, "eth0")
 
     # Radio button for file data and entry for file selection
     file_radio = tk.Radiobutton(field_frame, text="File Data", variable=src_type, value="file")
