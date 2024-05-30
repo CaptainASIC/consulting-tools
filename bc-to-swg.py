@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
+from tkinter import messagebox, filedialog, ttk, Canvas
 import subprocess
 import requests
 import webbrowser
@@ -152,24 +152,22 @@ def main():
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("1050x800")
     root.resizable(False, False)
-    #icon_path = 'img/ASIC.png'
-    #img_icon = tk.PhotoImage(file=icon_path)
-    #root.iconphoto(False, img_icon)
+    root.configure(bg="gray15")
 
     src_type = tk.StringVar(value="live")
     append_overwrite_type = tk.StringVar(value="append")
-    field_frame = tk.Frame(root)
+    field_frame = tk.Frame(root, bg="gray15")
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
     entries = []
 
     # Source fields with border
-    source_frame = tk.LabelFrame(field_frame, text="Bluecoat", padx=10, pady=10, bd=2, relief="groove")
+    source_frame = tk.LabelFrame(field_frame, text="Bluecoat", padx=10, pady=10, bd=2, relief="groove", fg="goldenrod", bg="gray15")
     source_frame.grid(row=1, column=0, sticky="ew", pady=10, padx=20)
 
     source_labels = ["Source IP/FQDN:", "SSH Port:", "Source Username:", "Source Password:"]
     for i, label in enumerate(source_labels):
-        label_widget = tk.Label(source_frame, text=label)
+        label_widget = tk.Label(source_frame, text=label, bg="gray15", fg="white")
         label_widget.grid(row=i, column=0, sticky="e")
         entry = tk.Entry(source_frame, width=16)
         if "Password" in label:
@@ -179,16 +177,16 @@ def main():
 
     entries[1].insert(0, "22")
 
-    btn_test_bluecoat = tk.Button(field_frame, text="Test Connection\n to Bluecoat", command=lambda: test_bc_connection(entries[0].get(), entries[2].get(), entries[3].get(), entries[1].get()))
+    btn_test_bluecoat = tk.Button(field_frame, text="Test Connection\n to Bluecoat", command=lambda: test_bc_connection(entries[0].get(), entries[2].get(), entries[3].get(), entries[1].get()), bg="gray60")
     btn_test_bluecoat.grid(row=1, column=1, padx=10, sticky="w")
 
     # Destination fields with border
-    dest_frame = tk.LabelFrame(field_frame, text="SkyHigh Web Gateway", padx=10, pady=10, bd=2, relief="groove")
+    dest_frame = tk.LabelFrame(field_frame, text="SkyHigh Web Gateway", padx=10, pady=10, bd=2, relief="groove", fg="goldenrod", bg="gray15")
     dest_frame.grid(row=1, column=2, sticky="ew", pady=10, padx=20)
 
     dest_labels = ["Destination IP/FQDN:", "REST Port (https):", "Destination Username:", "Destination Password:"]
     for i, label in enumerate(dest_labels):
-        label_widget = tk.Label(dest_frame, text=label)
+        label_widget = tk.Label(dest_frame, text=label, bg="gray15", fg="white")
         label_widget.grid(row=i, column=0, sticky="e")
         entry = tk.Entry(dest_frame, width=16)
         if "Password" in label:
@@ -198,25 +196,25 @@ def main():
 
     entries[5].insert(0, "4712")
 
-    btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_swg_connection(entries[4].get(), entries[6].get(), entries[7].get(), entries[5].get()))
+    btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_swg_connection(entries[4].get(), entries[6].get(), entries[7].get(), entries[5].get()), bg="gray60")
     btn_test_swg.grid(row=1, column=3, padx=10, sticky="w")
 
-    # Separator
-    separator = ttk.Separator(field_frame, orient='horizontal')
-    separator.grid(row=2, column=0, columnspan=5, sticky="ew", pady=10)
+    # Custom separator using canvas
+    separator_canvas = Canvas(field_frame, height=2, bd=0, highlightthickness=0, bg="goldenrod")
+    separator_canvas.grid(row=2, column=0, columnspan=5, sticky="ew", pady=10)
 
     # Static Routes
-    staticroutes_frame = tk.LabelFrame(field_frame, text="Static Routes (IPv4 Only)", padx=10, pady=10, bd=2, relief="groove")
+    staticroutes_frame = tk.LabelFrame(field_frame, text="Static Routes (IPv4 Only)", padx=10, pady=10, bd=2, relief="groove", fg="goldenrod", bg="gray15")
     staticroutes_frame.grid(row=3, column=0, sticky="ew", pady=10)
 
     # Live data and file data radio buttons
-    live_radio = tk.Radiobutton(staticroutes_frame, text="Live Data", variable=src_type, value="live")
+    live_radio = tk.Radiobutton(staticroutes_frame, text="Live Data", variable=src_type, value="live", bg="gray15", fg="white", selectcolor="gray15")
     live_radio.grid(row=0, column=0, sticky="w")
-    file_radio = tk.Radiobutton(staticroutes_frame, text="File Data", variable=src_type, value="file")
+    file_radio = tk.Radiobutton(staticroutes_frame, text="File Data", variable=src_type, value="file", bg="gray15", fg="white", selectcolor="gray15")
     file_radio.grid(row=0, column=1, sticky="w", padx=10)
 
     # Destination interface field
-    interface_label = tk.Label(staticroutes_frame, text="SWG Interface:")
+    interface_label = tk.Label(staticroutes_frame, text="SWG Interface:", bg="gray15", fg="white")
     interface_label.grid(row=1, column=0, sticky="e")
     interface_entry = tk.Entry(staticroutes_frame)
     interface_entry.grid(row=1, column=1, sticky="ew")
@@ -226,64 +224,64 @@ def main():
     # File input field
     file_entry = tk.Entry(staticroutes_frame)
     file_entry.grid(row=2, column=0, columnspan=2, sticky="ew", pady=10)
-    browse_button = tk.Button(staticroutes_frame, text="Browse", command=lambda: choose_file(file_entry))
+    browse_button = tk.Button(staticroutes_frame, text="Browse", command=lambda: choose_file(file_entry), bg="gray60")
     browse_button.grid(row=2, column=2, padx=10)
     entries.append(file_entry)
     entries[9].insert(0, "staticroutes.csv")
 
     # Append or Overwrite radio buttons
-    append_radio = tk.Radiobutton(staticroutes_frame, text="Append Routes", variable=append_overwrite_type, value="append")
+    append_radio = tk.Radiobutton(staticroutes_frame, text="Append Routes", variable=append_overwrite_type, value="append", bg="gray15", fg="white", selectcolor="gray15")
     append_radio.grid(row=3, column=0, sticky="w")
-    overwrite_radio = tk.Radiobutton(staticroutes_frame, text="Overwrite Routes", variable=append_overwrite_type, value="overwrite")
+    overwrite_radio = tk.Radiobutton(staticroutes_frame, text="Overwrite Routes", variable=append_overwrite_type, value="overwrite", bg="gray15", fg="white", selectcolor="gray15")
     overwrite_radio.grid(row=3, column=1, sticky="w", padx=10)
 
     # Migrate button
     def handle_migration():
         post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
 
-    btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=handle_migration)
+    btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=handle_migration, bg="gray60")
     btn_migrate.grid(row=4, column=0, columnspan=3, pady=20)
 
     # Policy Lists Migration section
-    policy_frame = tk.LabelFrame(field_frame, text="Policy Lists", padx=10, pady=10, bd=2, relief="groove")
+    policy_frame = tk.LabelFrame(field_frame, text="Policy Lists", padx=10, pady=10, bd=2, relief="groove", fg="goldenrod", bg="gray15")
     policy_frame.grid(row=3, column=2, sticky="ew", pady=10)
 
     # Policy Lists live and file data radio buttons
     policy_src_type = tk.StringVar(value="live")
-    policy_live_radio = tk.Radiobutton(policy_frame, text="Live Data", variable=policy_src_type, value="live")
+    policy_live_radio = tk.Radiobutton(policy_frame, text="Live Data", variable=policy_src_type, value="live", bg="gray15", fg="white", selectcolor="gray15")
     policy_live_radio.grid(row=0, column=0, sticky="w")
-    policy_file_radio = tk.Radiobutton(policy_frame, text="File Data", variable=policy_src_type, value="file")
+    policy_file_radio = tk.Radiobutton(policy_frame, text="File Data", variable=policy_src_type, value="file", bg="gray15", fg="white", selectcolor="gray15")
     policy_file_radio.grid(row=0, column=1, sticky="w", padx=10)
 
     # Policy Lists file input field
     policy_file_entry = tk.Entry(policy_frame)
     policy_file_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=10)
-    policy_browse_button = tk.Button(policy_frame, text="Browse", command=lambda: choose_file(policy_file_entry))
+    policy_browse_button = tk.Button(policy_frame, text="Browse", command=lambda: choose_file(policy_file_entry), bg="gray60")
     policy_browse_button.grid(row=1, column=2, padx=10)
 
     # Migrate Policy Lists button
-    btn_migrate_policy_lists = tk.Button(policy_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, policy_file_entry))
+    btn_migrate_policy_lists = tk.Button(policy_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, policy_file_entry), bg="gray60")
     btn_migrate_policy_lists.grid(row=2, column=0, columnspan=3, pady=20)
 
     # Proxy Services Migration section with border
-    proxy_frame = tk.LabelFrame(field_frame, text="Everything Else", padx=10, pady=10, bd=2, relief="groove")
+    proxy_frame = tk.LabelFrame(field_frame, text="Everything Else", padx=10, pady=10, bd=2, relief="groove", fg="goldenrod", bg="gray15")
     proxy_frame.grid(row=4, column=0, sticky="ew", pady=10)
     
     # Backup Current Config button
-    btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()))
+    btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()), bg="gray60")
     btn_backup_config.grid(row=0, column=0, padx=10, sticky="w")
 
     # Migrate Proxy Services button
-    btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry))
+    btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry), bg="gray60")
     btn_migrate_proxy_services.grid(row=1, column=0, pady=20)
 
-    button_frame = tk.Frame(root)
+    button_frame = tk.Frame(root, bg="gray15")
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
 
-    btn_about = tk.Button(button_frame, text="About", command=show_about)
+    btn_about = tk.Button(button_frame, text="About", command=show_about, bg="gray60")
     btn_about.pack(side='left', anchor='sw')
 
-    btn_exit = tk.Button(button_frame, text="Exit", command=lambda: on_exit(entries, file_entry, root))
+    btn_exit = tk.Button(button_frame, text="Exit", command=lambda: on_exit(entries, file_entry, root), bg="gray60")
     btn_exit.pack(side='right', anchor='se')
 
     load_config(entries, file_entry)
