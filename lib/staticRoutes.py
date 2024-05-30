@@ -1,25 +1,19 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
-import subprocess
-import requests
-import webbrowser
-from base64 import b64encode
-import configparser
-from xml.etree import ElementTree as ET
-import re
+from tkinter import messagebox
 import paramiko
-import os
-import sys
-from pathlib import Path
+import requests
+from base64 import b64encode
+import re
+import subprocess
 
-def fetch_static_routes(source_ip, username, password, filename):
+def fetch_static_routes(source_ip, username, password, filename, port=22):
     # Attempt to fetch static routes via SSH
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
-        # Connect to the host using username and password
-        client.connect(source_ip, username=username, password=password, timeout=10)
+        # Connect to the host using username, password, and port
+        client.connect(source_ip, port=port, username=username, password=password, timeout=10)
         
         # Run the command to get static routes
         stdin, stdout, stderr = client.exec_command("show static-routes")
@@ -78,15 +72,36 @@ def clean_and_save_routes(filename):
     messagebox.showinfo("Info", f"Cleaned BlueCoat static routes have been saved to {cleaned_filename}.")
     return cleaned_filename
 
-def get_network_routes(dest_ip, dest_user, dest_pass):
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+def get_appliance_uuid(dest_ip, dest_user, dest_pass, port=4712):
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header}
+    url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances"
+    
+    try:
+        response = requests.get(url, headers=headers, verify=False)
+        response.raise_for_status()
+
+        # Log the raw XML for debugging
+        print("Raw XML Response:", response.text)
+
+        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
+        root = ET.fromstring(response.content)
+        uuid = root.find('.//entry/id').text
+
+        return uuid
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
+        return None
+
+def get_network_routes(dest_ip, dest_user, dest_pass, port=4712):
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
     if not uuid:
         messagebox.showerror("Error", "Failed to get UUID for GET test.")
         return
 
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header}
-    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+    route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
 
     try:
         response = requests.get(route_url, headers=headers, verify=False)
@@ -101,8 +116,8 @@ def get_network_routes(dest_ip, dest_user, dest_pass):
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
 
-def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename, mode, port=4712):
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
 
@@ -110,7 +125,7 @@ def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
 
     # Step 1: Fetch existing routes
-    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
+    route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
     try:
         response = requests.get(route_url, headers=headers, verify=False)
         existing_xml = response.text
@@ -118,7 +133,7 @@ def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
         messagebox.showerror("Error", f"Failed to fetch existing routes: {e}")
         return
 
-        # Step 2: Modify the XML with new routes
+    # Step 2: Modify the XML with new routes
     try:
         with open(filename, "r") as file:
             new_routes = file.readlines()
@@ -136,40 +151,36 @@ def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
                                 &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
                             &lt;/configurationProperties&gt;
                         &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
-               
-        # Remove <link> tag using regex
-        modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
-        # Insert new entries before </content></entry>
-        #modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
-        modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
+
+        if mode == "append":
+            # Remove <link> tag using regex
+            modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
+            # Insert new entries before </content></entry>
+            modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+        elif mode == "overwrite":
+            # Create new XML structure with new entries only
+            modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
   &lt;description&gt;&lt;/description&gt;
   &lt;content&gt;{new_entries}
   &lt;/content&gt;&lt;/list&gt;</content></entry>
             '''
+
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
 
         # Step 3: Upload the modified XML
-        #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
-        #response.raise_for_status()
         curl_command = f'curl -k -c cookies.txt -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
         subprocess.run(curl_command, shell=True)
         
         # Commit changes
-        #commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/commit"
-        #requests.post(commit_url, headers=headers, verify=False).raise_for_status()
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/commit'
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
         subprocess.run(curl_command, shell=True)
 
         # Logout
-        #logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/logout"
-        #requests.post(logout_url, headers=headers, verify=False).raise_for_status()
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/logout'
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/logout'
         subprocess.run(curl_command, shell=True)
-
 
         messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to update routes: {e}")
-
