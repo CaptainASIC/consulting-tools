@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-app_version = "2.0.2 Beta"
+app_version = "2.1.0 Beta"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -117,8 +117,8 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1050x600")
-    #root.resizable(False, False)
+    root.geometry("1050x800")
+    root.resizable(False, False)
 
     src_type = tk.StringVar(value="live")
     field_frame = tk.Frame(root)
@@ -134,7 +134,7 @@ def main():
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(source_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(source_frame, width=16)
+        entry = tk.Entry(source_frame, width=32)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -149,7 +149,7 @@ def main():
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(dest_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(dest_frame, width=16)
+        entry = tk.Entry(dest_frame, width=32)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -190,12 +190,34 @@ def main():
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
 
-    # New buttons for Migrate Policy Lists and Migrate Proxy Services
-    btn_migrate_policy_lists = tk.Button(field_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, file_entry))
-    btn_migrate_policy_lists.grid(row=3, column=1, padx=10, sticky="w")
+    # Policy Lists Migration section
+    policy_frame = tk.LabelFrame(field_frame, text="Policy Lists", padx=10, pady=10, bd=2, relief="groove")
+    policy_frame.grid(row=3, column=2, sticky="ew", pady=10)
 
-    btn_migrate_proxy_services = tk.Button(field_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry))
-    btn_migrate_proxy_services.grid(row=3, column=2, padx=10, sticky="w")
+    # Policy Lists live and file data radio buttons
+    policy_src_type = tk.StringVar(value="live")
+    policy_live_radio = tk.Radiobutton(policy_frame, text="Live Data", variable=policy_src_type, value="live")
+    policy_live_radio.grid(row=0, column=0, sticky="w")
+    policy_file_radio = tk.Radiobutton(policy_frame, text="File Data", variable=policy_src_type, value="file")
+    policy_file_radio.grid(row=0, column=1, sticky="w", padx=10)
+
+    # Policy Lists file input field
+    policy_file_entry = tk.Entry(policy_frame)
+    policy_file_entry.grid(row=1, column=0, columnspan=2, sticky="ew", pady=10)
+    policy_browse_button = tk.Button(policy_frame, text="Browse", command=lambda: choose_file(policy_file_entry))
+    policy_browse_button.grid(row=1, column=2, padx=10)
+
+    # Migrate Policy Lists button
+    btn_migrate_policy_lists = tk.Button(policy_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, policy_file_entry))
+    btn_migrate_policy_lists.grid(row=2, column=0, columnspan=3, pady=20)
+
+    # Proxy Services Migration section with border
+    proxy_frame = tk.LabelFrame(field_frame, text="Everything Else", padx=10, pady=10, bd=2, relief="groove")
+    proxy_frame.grid(row=4, column=0, sticky="ew", pady=10)
+
+    # Migrate Proxy Services button
+    btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry))
+    btn_migrate_proxy_services.grid(row=0, column=0, columnspan=3, pady=20)
 
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
