@@ -21,7 +21,6 @@ sys.path.append(str(lib_dir))
 # Import modules from the 'lib' directory
 from staticroutes import fetch_static_routes, clean_and_save_routes, post_routes
 
-
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
     config.read('last.cfg')
@@ -57,14 +56,6 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
         root = ET.fromstring(response.content)
         uuid = root.find('.//entry/id').text
 
-        # Display a popup with the UUID
-        #messagebox.showinfo("UUID Retrieved", f"Current System UUID: {uuid}")
-
-        return uuid
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
-        return None
-
 def build_xml_payload(filename,uuid):
     with open(filename, "r") as file:
         lines = file.readlines()
@@ -80,7 +71,6 @@ def migrate_action(src_type, entries, file_entry):
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
         post_routes(entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), cleaned_file)
-
 
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
@@ -117,7 +107,6 @@ def show_about():
 def save_config(entries, file_entry):
     config = configparser.ConfigParser()
     
-    # Assuming entries are in the order: [source IP, source Username, source Password, dest IP, dest Username, dest Password]
     config['SOURCE'] = {
         'IP': entries[0].get(),
         'Username': entries[1].get(),
@@ -141,10 +130,17 @@ def on_exit(entries, file_entry, root):
     save_config(entries, file_entry)
     root.quit()
 
+def test_swg_connection(dest_ip, dest_user, dest_pass):
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+    if uuid:
+        messagebox.showinfo("SWG Connection Test", "Successfully connected to SWG and retrieved UUID.\n {uuid}")
+    else:
+        messagebox.showerror("SWG Connection Test", "Failed to connect to SWG and retrieve UUID.")
+
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1024x600")
+    root.geometry("1050x600")
     root.resizable(False, False)
 
     src_type = tk.StringVar(value="live")
@@ -161,7 +157,7 @@ def main():
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(source_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(source_frame, width=16)
+        entry = tk.Entry(source_frame, width=32)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -176,11 +172,11 @@ def main():
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(dest_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(dest_frame, width=16)
+        entry = tk.Entry(dest_frame, width=32)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
-    btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_connection(entries[3].get(), entries[4].get(), entries[5].get()))
+    btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_swg_connection(entries[3].get(), entries[4].get(), entries[5].get()))
     btn_test_swg.grid(row=1, column=3, padx=10, sticky="w")
 
     # Separator
@@ -217,7 +213,7 @@ def main():
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
 
-    # New buttons for Migrate Policy Lists and Migrate Proxy Services
+    # Migrate Policy Lists and Migrate Proxy Services
     btn_migrate_policy_lists = tk.Button(field_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, file_entry))
     btn_migrate_policy_lists.grid(row=3, column=1, padx=10, sticky="w")
 
