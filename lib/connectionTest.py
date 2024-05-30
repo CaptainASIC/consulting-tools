@@ -1,17 +1,8 @@
-import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
-import subprocess
-import requests
-import webbrowser
-from base64 import b64encode
-import configparser
-from xml.etree import ElementTree as ET
-import re
 import paramiko
-import os
-import sys
-from pathlib import Path
-from datetime import datetime
+import requests
+from tkinter import messagebox
+from base64 import b64encode
+from xml.etree import ElementTree as ET
 
 def test_bc_connection(source_ip, username, password, port=22):
     # Attempt to fetch identifier via SSH
@@ -26,19 +17,17 @@ def test_bc_connection(source_ip, username, password, port=22):
         stdin, stdout, stderr = client.exec_command("show appliance-identifier")
         output = stdout.read().decode()
         errors = stderr.read().decode()
-
+        
         # Extract the appliance ID using regex
         match = re.search(r"Appliance Identifier\s*:\s*(\S+)", output)
         if match:
             bcid = match.group(1)
-            messagebox.showinfo("BlueCoat Connection Test", f"Successfully connected to BlueCoat and retrieved Identifier.\n {bcid}")
+            messagebox.showinfo("BlueCoat Connection Test", f"Successfully connected to BlueCoat and retrieved Identifier:\n{bcid}")
         else:
-            bcid = None
-            messagebox.showerror("BlueCoat Connection Test", "Failed to connect to BlueCoat and retrieve Identifier.")
+            messagebox.showerror("BlueCoat Connection Test", "Failed to retrieve Identifier.")
     except Exception as e:
         messagebox.showerror("BlueCoat Connection Test", f"Failed to connect to BlueCoat: {e}")
     finally:
-        # Close the connection
         client.close()
 
 def test_swg_connection(dest_ip, dest_user, dest_pass, port=4712):
@@ -56,9 +45,7 @@ def test_swg_connection(dest_ip, dest_user, dest_pass, port=4712):
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         root = ET.fromstring(response.content)
         uuid = root.find('.//entry/id').text
-        messagebox.showinfo("SWG Connection Test", f"Successfully connected to SWG and retrieved UUID.\n {uuid}")
-        return uuid
-    
+
+        messagebox.showinfo("SWG Connection Test", f"Successfully connected to SWG and retrieved UUID:\n{uuid}")
     except Exception as e:
-        messagebox.showerror("SWG Connection Test", f"Failed to connect to SWG and retrieve UUID.\n {e}")
-        return None
+        messagebox.showerror("SWG Connection Test", f"Failed to connect to SWG: {e}")

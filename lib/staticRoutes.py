@@ -1,17 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk
-import subprocess
-import requests
-import webbrowser
-from base64 import b64encode
-import configparser
-from xml.etree import ElementTree as ET
-import re
+from tkinter import messagebox
 import paramiko
-import os
-import sys
-from pathlib import Path
-from datetime import datetime
+import requests
+from base64 import b64encode
+import re
+import subprocess
 
 def fetch_static_routes(source_ip, username, password, filename, port=22):
     # Attempt to fetch static routes via SSH
@@ -158,20 +151,19 @@ def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename, mode, p
                                 &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
                             &lt;/configurationProperties&gt;
                         &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
-
         if mode == "append":
+            # Append XML       
             # Remove <link> tag using regex
             modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
             # Insert new entries before </content></entry>
             modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
-        elif mode == "overwrite":
-            # Create new XML structure with new entries only
+        else:
+            #Overwrite XML
             modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
   &lt;description&gt;&lt;/description&gt;
   &lt;content&gt;{new_entries}
   &lt;/content&gt;&lt;/list&gt;</content></entry>
             '''
-
         # Save the modified XML locally for testing
         with open('new_routes.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
