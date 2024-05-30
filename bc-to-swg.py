@@ -63,14 +63,14 @@ def build_xml_payload(filename,uuid):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
+        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get(), app_version)
 
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[2].get(), entries[3].get(), source_file, entries[1].get())
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
+        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get(), app_version)
 
 def backup_config(dest_ip, dest_port, dest_user, dest_pass):
     # Prompt user for the backup file name
@@ -150,7 +150,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1050x800")
+    root.geometry("1080x800")
     root.resizable(False, False)
     root.configure(bg="gray15")
 
@@ -215,9 +215,9 @@ def main():
 
     # Destination interface field
     interface_label = tk.Label(staticroutes_frame, text="SWG Interface:", bg="gray15", fg="white")
-    interface_label.grid(row=1, column=0, sticky="e")
+    interface_label.grid(row=1, column=0, sticky="w")
     interface_entry = tk.Entry(staticroutes_frame)
-    interface_entry.grid(row=1, column=1, sticky="ew")
+    interface_entry.grid(row=1, column=1, sticky="w")
     entries.append(interface_entry)
     entries[8].insert(0, "eth0")
 
@@ -237,7 +237,7 @@ def main():
 
     # Migrate button
     def handle_migration():
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
+        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get(), app_version)
 
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=handle_migration, bg="gray60")
     btn_migrate.grid(row=4, column=0, columnspan=3, pady=20)
