@@ -1,6 +1,16 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog, ttk
+import subprocess
+import requests
+import webbrowser
 from base64 import b64encode
+import configparser
+from xml.etree import ElementTree as ET
 import re
 import paramiko
+import os
+import sys
+from pathlib import Path
 
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
