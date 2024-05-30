@@ -119,7 +119,11 @@ def main():
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("1050x800")
     root.resizable(False, False)
+    icon_path = 'img/ASIC.png'
+    img_icon = tk.PhotoImage(file=icon_path)
+    root.iconphoto(False, img_icon)
 
+    
     src_type = tk.StringVar(value="live")
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
