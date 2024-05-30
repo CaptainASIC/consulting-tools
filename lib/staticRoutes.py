@@ -1,3 +1,7 @@
+from base64 import b64encode
+import re
+import paramiko
+
 def fetch_static_routes(source_ip, username, password, filename):
     # Attempt to fetch static routes via SSH
     client = paramiko.SSHClient()

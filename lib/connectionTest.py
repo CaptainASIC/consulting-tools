@@ -1,3 +1,7 @@
+from base64 import b64encode
+import re
+import paramiko
+
 def test_bc_connection(source_ip, username, password):
     # Attempt to fetch identifier via SSH
     client = paramiko.SSHClient()
