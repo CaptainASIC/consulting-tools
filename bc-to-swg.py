@@ -5,6 +5,7 @@ import requests
 import webbrowser
 from base64 import b64encode
 import configparser
+from xml.etree import ElementTree as ET
 import re
 import paramiko
 import os
@@ -38,23 +39,6 @@ def load_config(entries, file_entry):
         entries[7].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
     if 'FILE' in config:
         file_entry.insert(0, config['FILE'].get('Path', ''))
-
-def get_appliance_uuid(dest_ip, dest_user, dest_pass):
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
-    headers = {"Authorization": auth_header}
-    url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances"
-    
-    try:
-        response = requests.get(url, headers=headers, verify=False)
-        response.raise_for_status()
-
-        # Log the raw XML for debugging
-        print("Raw XML Response:", response.text)
-
-        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
-        from xml.etree import ElementTree as ET
-        root = ET.fromstring(response.content)
-        uuid = root.find('.//entry/id').text
 
 def build_xml_payload(filename,uuid):
     with open(filename, "r") as file:
@@ -130,8 +114,54 @@ def on_exit(entries, file_entry, root):
     save_config(entries, file_entry)
     root.quit()
 
+def test_bc_connection(source_ip, username, password):
+    # Attempt to fetch identifier via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username and password
+        client.connect(source_ip, username=username, password=password, timeout=10)
+        
+        # Run the command to get static routes
+        stdin, stdout, stderr = client.exec_command("show appliance-identifier")
+        output = stdout.read().decode()
+        errors = stderr.read().decode()
+        
+        # Extract the appliance ID using regex
+        match = re.search(r"Appliance Identifier\s*:\s*(\S+)", output)
+        if match:
+            bcid = match.group(1)
+        else:
+            bcid = None
+    finally:
+        # Close the connection
+        client.close()
+    
+    if bcid:
+        messagebox.showinfo("SWG Connection Test", "Successfully connected to BlueCoat and retrieved Identifier.\n {bcid}")
+    else:
+        messagebox.showerror("SWG Connection Test", "Failed to connect to BlueCoat and retrieve Identifier.")
+
 def test_swg_connection(dest_ip, dest_user, dest_pass):
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header}
+    url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances"
+    
+    try:
+        response = requests.get(url, headers=headers, verify=False)
+        response.raise_for_status()
+
+        # Log the raw XML for debugging
+        print("Raw XML Response:", response.text)
+
+        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
+        root = ET.fromstring(response.content)
+        uuid = root.find('.//entry/id').text
+
+    except Exception as e:
+        return None
+    
     if uuid:
         messagebox.showinfo("SWG Connection Test", "Successfully connected to SWG and retrieved UUID.\n {uuid}")
     else:
@@ -161,7 +191,7 @@ def main():
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
-    btn_test_bluecoat = tk.Button(field_frame, text="Test Connection\n to Bluecoat", command=lambda: test_connection(entries[0].get(), entries[1].get(), entries[2].get()))
+    btn_test_bluecoat = tk.Button(field_frame, text="Test Connection\n to Bluecoat", command=lambda: test_bc_connection(entries[0].get(), entries[1].get(), entries[2].get()))
     btn_test_bluecoat.grid(row=1, column=1, padx=10, sticky="w")
 
     # Destination fields with border
@@ -213,7 +243,7 @@ def main():
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
 
-    # Migrate Policy Lists and Migrate Proxy Services
+    # New buttons for Migrate Policy Lists and Migrate Proxy Services
     btn_migrate_policy_lists = tk.Button(field_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, file_entry))
     btn_migrate_policy_lists.grid(row=3, column=1, padx=10, sticky="w")
 
