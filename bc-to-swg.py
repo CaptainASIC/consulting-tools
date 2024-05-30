@@ -155,13 +155,13 @@ def main():
 
     # Source fields with border
     source_frame = tk.LabelFrame(field_frame, text="Bluecoat", padx=10, pady=10, bd=2, relief="groove")
-    source_frame.grid(row=1, column=0, sticky="ew", pady=10)
+    source_frame.grid(row=1, column=0, sticky="ew", pady=10, padx=20)
 
     source_labels = ["Source IP/FQDN:", "Source Username:", "Source Password:"]
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(source_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(source_frame)
+        entry = tk.Entry(source_frame, width=16)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -176,7 +176,7 @@ def main():
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(dest_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(dest_frame)
+        entry = tk.Entry(dest_frame, width=16)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
