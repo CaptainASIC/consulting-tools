@@ -132,7 +132,7 @@ def test_bc_connection(source_ip, username, password):
         match = re.search(r"Appliance Identifier\s*:\s*(\S+)", output)
         if match:
             bcid = match.group(1)
-            messagebox.showinfo("BlueCoat Connection Test", "Successfully connected to BlueCoat and retrieved Identifier.\n {bcid}")
+            messagebox.showinfo(f"BlueCoat Connection Test", "Successfully connected to BlueCoat and retrieved Identifier.\n {bcid}")
         else:
             bcid = None
             messagebox.showerror("BlueCoat Connection Test", "Failed to connect to BlueCoat and retrieve Identifier.")
@@ -155,11 +155,11 @@ def test_swg_connection(dest_ip, dest_user, dest_pass):
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         root = ET.fromstring(response.content)
         uuid = root.find('.//entry/id').text
-        messagebox.showinfo("SWG Connection Test", "Successfully connected to SWG and retrieved UUID.\n {uuid}")
+        messagebox.showinfo(f"SWG Connection Test", "Successfully connected to SWG and retrieved UUID.\n {uuid}")
         return uuid
     
     except Exception as e:
-        messagebox.showerror("SWG Connection Test", "Failed to connect to SWG and retrieve UUID.\n {e}")
+        messagebox.showerror(f"SWG Connection Test", "Failed to connect to SWG and retrieve UUID.\n {e}")
         return None
     
 def main():
