@@ -63,14 +63,14 @@ def build_xml_payload(filename,uuid):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get(), app_version)
+        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
 
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[2].get(), entries[3].get(), source_file, entries[1].get())
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get(), app_version)
+        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
 
 def backup_config(dest_ip, dest_port, dest_user, dest_pass):
     # Prompt user for the backup file name
@@ -237,7 +237,7 @@ def main():
 
     # Migrate button
     def handle_migration():
-        post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get(), app_version)
+        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
 
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=handle_migration, bg="gray60")
     btn_migrate.grid(row=4, column=0, columnspan=3, pady=20)

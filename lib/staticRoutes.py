@@ -123,7 +123,7 @@ def get_network_routes(dest_ip, dest_user, dest_pass, port=4712):
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
 
-def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename, mode, port=4712, app_version):
+def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, filename, mode, port=4712):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
