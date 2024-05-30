@@ -7,8 +7,20 @@ from base64 import b64encode
 import configparser
 import re
 import paramiko
+import os
+import sys
+from pathlib import Path
 
-app_version = "2.0.1"
+app_version = "2.0.2 Beta"
+
+# Modify the Python path to include the 'lib' directory
+script_dir = Path(__file__).resolve().parent
+lib_dir = script_dir / 'lib'
+sys.path.append(str(lib_dir))
+
+# Import modules from the 'lib' directory
+from staticroutes import fetch_static_routes, clean_and_save_routes, post_routes
+
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -24,6 +36,7 @@ def load_config(entries, file_entry):
         entries[4].insert(0, config['DESTINATION'].get('Username', ''))
         entries[5].insert(0, config['DESTINATION'].get('Password', ''))
         entries[6].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
+        entries[7].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
     if 'FILE' in config:
         file_entry.insert(0, config['FILE'].get('Path', ''))
 
@@ -52,171 +65,9 @@ def get_appliance_uuid(dest_ip, dest_user, dest_pass):
         messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
         return None
 
-def fetch_static_routes(source_ip, username, password, filename):
-    # Attempt to fetch static routes via SSH
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-    try:
-        # Connect to the host using username and password
-        client.connect(source_ip, username=username, password=password, timeout=10)
-        
-        # Run the command to get static routes
-        stdin, stdout, stderr = client.exec_command("show static-routes")
-        output = stdout.read().decode()
-        errors = stderr.read().decode()
-        
-        # Check for errors and write output to file
-        if errors:
-            raise Exception(errors)
-        with open(filename, "w") as f:
-            f.write(output)
-
-        messagebox.showinfo("Success", f"Static routes have been saved to {filename}.")
-        # Clean up the output and save it again
-        clean_and_save_routes(filename)
-
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
-    finally:
-        # Close the connection
-        client.close()
-
-def clean_and_save_routes(filename):
-    # Read the output and apply cleaning
-    with open(filename, "r") as file:
-        lines = file.readlines()
-
-    start_cleaning = False
-    cleaned_data = []
-
-    for line in lines:
-        if "default" in line:
-            start_cleaning = True  # Start capturing lines from "default"
-        elif "Internet6:" in line:
-            break  # Break the loop if "Internet6:" appears (stop capturing)
-
-        if start_cleaning:
-            # Avoid lines that start with specific words
-            if line.startswith(("Routing", "Destination", "default")):
-                continue  # Skip lines starting with these words
-            # Assuming the format "destination gateway flags refs use netif expi"
-            parts = line.split()
-            if len(parts) > 1:  # To ensure there's at least destination and gateway
-                destination = parts[0]
-                gateway = parts[1]
-                cleaned_data.append(f"{destination},{gateway}")
-
-    # Assuming the new file name is the original with '_cleaned.csv'
-    cleaned_filename = filename.replace('.csv', '_cleaned.csv')
-
-    # Write the cleaned data to a new file
-    with open(cleaned_filename, "w") as file:
-        for entry in cleaned_data:
-            file.write(entry + "\n")
-
-    messagebox.showinfo("Info", f"Cleaned BlueCoat static routes have been saved to {cleaned_filename}.")
-    return cleaned_filename
-
-def get_network_routes(dest_ip, dest_user, dest_pass):
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
-    if not uuid:
-        messagebox.showerror("Error", "Failed to get UUID for GET test.")
-        return
-
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
-    headers = {"Authorization": auth_header}
-    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-
-    try:
-        response = requests.get(route_url, headers=headers, verify=False)
-        response.raise_for_status()
-        messagebox.showinfo("GET Test", f"Current SWG Network Routes:\n{response.text}")
-        
-        # Save the XML to a file
-        with open('current_network_routes.xml', 'w') as file:
-            file.write(response.text)
-        messagebox.showinfo("File Saved", "The current SWG network routes have been saved to 'current_network_routes.xml'.")
-
-    except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to fetch network routes: {e}")
-
 def build_xml_payload(filename,uuid):
     with open(filename, "r") as file:
         lines = file.readlines()
-    
-def post_routes(dest_ip, dest_user, dest_pass, dest_interface, filename):
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass)
-    if not uuid:
-        return  # Stop if UUID could not be retrieved
-
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
-    headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
-
-    # Step 1: Fetch existing routes
-    route_url = f"https://{dest_ip}:4712/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.routes.configuration/property/network.routes.ip4"
-    try:
-        response = requests.get(route_url, headers=headers, verify=False)
-        existing_xml = response.text
-    except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to fetch existing routes: {e}")
-        return
-
-        # Step 2: Modify the XML with new routes
-    try:
-        with open(filename, "r") as file:
-            new_routes = file.readlines()
-        new_entries = ''
-        for line in new_routes:
-            parts = line.strip().split(',')
-            if len(parts) >= 2:
-                new_entries += f'''
-                    &lt;listEntry&gt;
-                        &lt;complexEntry&gt;
-                            &lt;configurationProperties&gt;
-                                &lt;configurationProperty key="network.routes.destination" type="com.scur.type.string" value="{parts[0]}"/&gt;
-                                &lt;configurationProperty key="network.routes.gateway" type="com.scur.type.string" value="{parts[1]}"/&gt;
-                                &lt;configurationProperty key="network.routes.device" type="com.scur.type.string" value="{dest_interface}"/&gt;
-                                &lt;configurationProperty key="network.routes.description" type="com.scur.type.string" value="Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}"/&gt;
-                            &lt;/configurationProperties&gt;
-                        &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
-               
-        # Remove <link> tag using regex
-        modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
-        # Insert new entries before </content></entry>
-        #modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
-        modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
-  &lt;description&gt;&lt;/description&gt;
-  &lt;content&gt;{new_entries}
-  &lt;/content&gt;&lt;/list&gt;</content></entry>
-            '''
-        # Save the modified XML locally for testing
-        with open('new_routes.xml', 'w') as new_xml_file:
-            new_xml_file.write(modified_xml)
-
-        # Step 3: Upload the modified XML
-        #response = requests.put(route_url, headers=headers, data=modified_xml, verify=False)
-        #response.raise_for_status()
-        curl_command = f'curl -k -c cookies.txt -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
-        subprocess.run(curl_command, shell=True)
-        
-        # Commit changes
-        #commit_url = f"https://{dest_ip}:4712/Konfigurator/REST/commit"
-        #requests.post(commit_url, headers=headers, verify=False).raise_for_status()
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/commit'
-        subprocess.run(curl_command, shell=True)
-
-        # Logout
-        #logout_url = f"https://{dest_ip}:4712/Konfigurator/REST/logout"
-        #requests.post(logout_url, headers=headers, verify=False).raise_for_status()
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:4712/Konfigurator/REST/logout'
-        subprocess.run(curl_command, shell=True)
-
-
-        messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
-    except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to update routes: {e}")
-
 
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
@@ -293,62 +144,75 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("640x480")
+    root.geometry("1024x600")
     root.resizable(False, False)
 
-    # Initialize the variable for choosing data source after creating the root window
     src_type = tk.StringVar(value="live")
-
-    # Frame for the fields
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
-    # Radio buttons for selecting data source
-    live_radio = tk.Radiobutton(field_frame, text="Live Data", variable=src_type, value="live")
-    live_radio.grid(row=0, column=0, sticky="w")
-
-    # List to store entry widgets for source and destination information
     entries = []
-    file_entry = tk.Entry(field_frame)
 
-    # Labels and entries for source information
+    # Source fields with border
+    source_frame = tk.LabelFrame(field_frame, text="Bluecoat", padx=10, pady=10, bd=2, relief="groove")
+    source_frame.grid(row=1, column=0, sticky="ew", pady=10)
+
     source_labels = ["Source IP/FQDN:", "Source Username:", "Source Password:"]
     for i, label in enumerate(source_labels):
-        label_widget = tk.Label(field_frame, text=label)
-        label_widget.grid(row=i+1, column=0, sticky="e")
-        entry = tk.Entry(field_frame)
-        entry.grid(row=i+1, column=1, sticky="ew")
-        entries.append(entry)  # Append each entry widget to the list
+        label_widget = tk.Label(source_frame, text=label)
+        label_widget.grid(row=i, column=0, sticky="e")
+        entry = tk.Entry(source_frame)
+        entry.grid(row=i, column=1, sticky="ew")
+        entries.append(entry)
 
-    # Labels and entries for destination information
-    dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:", "Destination Interface:"]
+    btn_test_bluecoat = tk.Button(field_frame, text="Test Connection\n to Bluecoat", command=lambda: test_connection(entries[0].get(), entries[1].get(), entries[2].get()))
+    btn_test_bluecoat.grid(row=1, column=1, padx=10, sticky="w")
+
+    # Destination fields with border
+    dest_frame = tk.LabelFrame(field_frame, text="SkyHigh Web Gateway", padx=10, pady=10, bd=2, relief="groove")
+    dest_frame.grid(row=1, column=2, sticky="ew", pady=10, padx=20)
+
+    dest_labels = ["Destination SWG IP:", "Destination Username:", "Destination Password:"]
     for i, label in enumerate(dest_labels):
-        label_widget = tk.Label(field_frame, text=label)
-        label_widget.grid(row=i+1, column=2, sticky="e")
-        entry = tk.Entry(field_frame)
-        entry.grid(row=i+1, column=3, sticky="ew")
-        entries.append(entry)  # Continue appending each entry widget
-    
+        label_widget = tk.Label(dest_frame, text=label)
+        label_widget.grid(row=i, column=0, sticky="e")
+        entry = tk.Entry(dest_frame)
+        entry.grid(row=i, column=1, sticky="ew")
+        entries.append(entry)
+
+    btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_connection(entries[3].get(), entries[4].get(), entries[5].get()))
+    btn_test_swg.grid(row=1, column=3, padx=10, sticky="w")
+
+    # Static Routes
+    staticroutes_frame = tk.LabelFrame(field_frame, text="Static Routes", padx=10, pady=10, bd=2, relief="groove")
+    staticroutes_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=10)
+
+    # Live data and file data radio buttons
+    live_radio = tk.Radiobutton(staticroutes_frame, text="Live Data", variable=src_type, value="live")
+    live_radio.grid(row=0, column=0, sticky="w")
+    file_radio = tk.Radiobutton(staticroutes_frame, text="File Data", variable=src_type, value="file")
+    file_radio.grid(row=0, column=1, sticky="w", padx=10)
+
+    # Destination interface field
+    interface_label = tk.Label(staticroutes_frame, text="SWG Interface:")
+    interface_label.grid(row=1, column=0, sticky="e")
+    interface_entry = tk.Entry(staticroutes_frame)
+    interface_entry.grid(row=1, column=1, sticky="ew")
+    entries.append(interface_entry)
     entries[6].insert(0, "eth0")
 
-    # Radio button for file data and entry for file selection
-    file_radio = tk.Radiobutton(field_frame, text="File Data", variable=src_type, value="file")
-    file_radio.grid(row=5, column=0, sticky="w", pady=20)
-    file_entry = tk.Entry(field_frame)
-    file_entry.grid(row=5, column=1, sticky="ew", columnspan=2, pady=20)
+    # File input field
+    file_entry = tk.Entry(staticroutes_frame)
+    file_entry.grid(row=2, column=0, columnspan=2, sticky="ew", pady=10)
+    browse_button = tk.Button(staticroutes_frame, text="Browse", command=lambda: choose_file(file_entry))
+    browse_button.grid(row=2, column=2, padx=10)
+    entries.append(file_entry)
+    entries[7].insert(0, "staticroutes.csv")
 
-    browse_button = tk.Button(field_frame, text="Browse", command=lambda: choose_file(file_entry))
-    browse_button.grid(row=5, column=3)
+    # Migrate button
+    btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
+    btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
 
-    # Migrate button with conditional action based on source type
-    btn_migrate = tk.Button(field_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
-    btn_migrate.grid(row=6, column=0, columnspan=5, pady=20)
-
-    # Add a button for performing the GET test
-    #btn_get_test = tk.Button(field_frame, text="GET Test", command=lambda: get_network_routes(entries[3].get(), entries[4].get(), entries[5].get()))
-    #btn_get_test.grid(row=7, column=3, pady=20)
-
-    # Frame for the buttons at the bottom
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
 
@@ -358,9 +222,8 @@ def main():
     btn_exit = tk.Button(button_frame, text="Exit", command=lambda: on_exit(entries, file_entry, root))
     btn_exit.pack(side='right', anchor='se')
 
-    # Load config if exists
     load_config(entries, file_entry)
-    
+
     root.mainloop()
 
 if __name__ == "__main__":
