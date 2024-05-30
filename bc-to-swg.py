@@ -123,22 +123,28 @@ def test_bc_connection(source_ip, username, password):
         # Connect to the host using username and password
         client.connect(source_ip, username=username, password=password, timeout=10)
         
-        # Run the command to get static routes
+        # Run the command to get appliance identifier
         stdin, stdout, stderr = client.exec_command("show appliance-identifier")
         output = stdout.read().decode()
         errors = stderr.read().decode()
+        
+        print(f"Output: {output}")
+        print(f"Errors: {errors}")
 
         # Extract the appliance ID using regex
         match = re.search(r"Appliance Identifier\s*:\s*(\S+)", output)
         if match:
             bcid = match.group(1)
-            messagebox.showinfo(f"BlueCoat Connection Test", "Successfully connected to BlueCoat and retrieved Identifier.\n {bcid}")
+            messagebox.showinfo("BlueCoat Connection Test", f"Successfully connected to BlueCoat and retrieved Identifier:\n {bcid}")
         else:
             bcid = None
             messagebox.showerror("BlueCoat Connection Test", "Failed to connect to BlueCoat and retrieve Identifier.")
+    except Exception as e:
+        messagebox.showerror("BlueCoat Connection Test", f"Failed to connect to BlueCoat and retrieve Identifier: {e}")
     finally:
         # Close the connection
         client.close()
+
 
 def test_swg_connection(dest_ip, dest_user, dest_pass):
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
@@ -150,23 +156,23 @@ def test_swg_connection(dest_ip, dest_user, dest_pass):
         response.raise_for_status()
 
         # Log the raw XML for debugging
-        print("Raw XML Response:", response.text)
+        print(f"Raw XML Response: {response.text}")
 
         # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
         root = ET.fromstring(response.content)
         uuid = root.find('.//entry/id').text
-        messagebox.showinfo(f"SWG Connection Test", "Successfully connected to SWG and retrieved UUID.\n {uuid}")
+        messagebox.showinfo("SWG Connection Test", f"Successfully connected to SWG and retrieved UUID:\n {uuid}")
         return uuid
     
     except Exception as e:
-        messagebox.showerror(f"SWG Connection Test", "Failed to connect to SWG and retrieve UUID.\n {e}")
+        messagebox.showerror("SWG Connection Test", f"Failed to connect to SWG and retrieve UUID: {e}")
         return None
-    
+
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("1050x600")
-    root.resizable(False, False)
+    #root.resizable(False, False)
 
     src_type = tk.StringVar(value="live")
     field_frame = tk.Frame(root)
@@ -182,7 +188,7 @@ def main():
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(source_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(source_frame, width=32)
+        entry = tk.Entry(source_frame, width=16)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -197,7 +203,7 @@ def main():
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(dest_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(dest_frame, width=32)
+        entry = tk.Entry(dest_frame, width=16)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
