@@ -11,6 +11,7 @@ import paramiko
 import os
 import sys
 from pathlib import Path
+from datetime import datetime
 
 app_version = "2.1.0 Beta"
 
@@ -22,22 +23,33 @@ sys.path.append(str(lib_dir))
 # Import modules from the 'lib' directory
 from staticRoutes import fetch_static_routes, clean_and_save_routes, post_routes
 from connectionTest import test_bc_connection, test_swg_connection
+
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
     config.read('last.cfg')
 
     if 'SOURCE' in config:
+        entries[0].delete(0, tk.END)
         entries[0].insert(0, config['SOURCE'].get('IP', ''))
+        entries[1].delete(0, tk.END)
         entries[1].insert(0, config['SOURCE'].get('Username', ''))
+        entries[2].delete(0, tk.END)
         entries[2].insert(0, config['SOURCE'].get('Password', ''))
 
     if 'DESTINATION' in config:
+        entries[3].delete(0, tk.END)
         entries[3].insert(0, config['DESTINATION'].get('IP', ''))
+        entries[4].delete(0, tk.END)
         entries[4].insert(0, config['DESTINATION'].get('Username', ''))
+        entries[5].delete(0, tk.END)
         entries[5].insert(0, config['DESTINATION'].get('Password', ''))
+        entries[6].delete(0, tk.END)
         entries[6].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
+        entries[7].delete(0, tk.END)
         entries[7].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
+
     if 'FILE' in config:
+        file_entry.delete(0, tk.END)
         file_entry.insert(0, config['FILE'].get('Path', ''))
 
 def build_xml_payload(filename,uuid):
@@ -55,6 +67,21 @@ def migrate_action(src_type, entries, file_entry):
         fetch_static_routes(entries[0].get(), entries[1].get(), entries[2].get(), source_file)
         cleaned_file = clean_and_save_routes(source_file)
         post_routes(entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), cleaned_file)
+
+def backup_config(dest_ip, dest_user, dest_pass):
+    # Prompt user for the backup file name
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    default_filename = f"{dest_ip}-{timestamp}.backup"
+    backup_file = filedialog.asksaveasfilename(defaultextension=".backup", filetypes=[("Backup files", "*.backup")], title="Save Backup File As", initialfile=default_filename)
+    if not backup_file:
+        return  # User canceled, do nothing
+    
+    try:
+        curl_command = f'curl -k -b cookies.txt -u {dest_user}:{dest_pass} -X POST https://{dest_ip}:4712/Konfigurator/REST/backup -o {backup_file}'
+        subprocess.run(curl_command, shell=True, check=True)
+        messagebox.showinfo("Backup Config", f"Backup successful! Configuration saved as: {backup_file}")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Backup Config", f"Backup failed: {e}")
 
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
@@ -119,11 +146,10 @@ def main():
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
     root.geometry("1050x800")
     root.resizable(False, False)
-    icon_path = 'img/ASIC.png'
-    img_icon = tk.PhotoImage(file=icon_path)
-    root.iconphoto(False, img_icon)
+    #icon_path = 'img/ASIC.png'
+    #img_icon = tk.PhotoImage(file=icon_path)
+    #root.iconphoto(False, img_icon)
 
-    
     src_type = tk.StringVar(value="live")
     field_frame = tk.Frame(root)
     field_frame.pack(fill='both', expand=True, padx=20, pady=20)
@@ -138,7 +164,7 @@ def main():
     for i, label in enumerate(source_labels):
         label_widget = tk.Label(source_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(source_frame, width=32)
+        entry = tk.Entry(source_frame, width=16, show="*" if "Password" in label else None)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -153,7 +179,7 @@ def main():
     for i, label in enumerate(dest_labels):
         label_widget = tk.Label(dest_frame, text=label)
         label_widget.grid(row=i, column=0, sticky="e")
-        entry = tk.Entry(dest_frame, width=32)
+        entry = tk.Entry(dest_frame, width=16, show="*" if "Password" in label else None)
         entry.grid(row=i, column=1, sticky="ew")
         entries.append(entry)
 
@@ -162,7 +188,7 @@ def main():
 
     # Separator
     separator = ttk.Separator(field_frame, orient='horizontal')
-    separator.grid(row=2, column=0, columnspan=4, sticky="ew", pady=10)
+    separator.grid(row=2, column=0, columnspan=5, sticky="ew", pady=10)
 
     # Static Routes
     staticroutes_frame = tk.LabelFrame(field_frame, text="Static Routes", padx=10, pady=10, bd=2, relief="groove")
@@ -190,9 +216,15 @@ def main():
     entries.append(file_entry)
     entries[7].insert(0, "staticroutes.csv")
 
+    # Append or Overwrite
+    Append_radio = tk.Radiobutton(staticroutes_frame, text="Append Routes", variable=src_type, value="append")
+    Append_radio.grid(row=3, column=0, sticky="w")
+    Overwrite_radio = tk.Radiobutton(staticroutes_frame, text="Overwrite Routes", variable=src_type, value="overwrite")
+    Overwrite_radio.grid(row=3, column=1, sticky="w", padx=10)
+
     # Migrate button
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
-    btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
+    btn_migrate.grid(row=4, column=0, columnspan=3, pady=20)
 
     # Policy Lists Migration section
     policy_frame = tk.LabelFrame(field_frame, text="Policy Lists", padx=10, pady=10, bd=2, relief="groove")
@@ -218,10 +250,14 @@ def main():
     # Proxy Services Migration section with border
     proxy_frame = tk.LabelFrame(field_frame, text="Everything Else", padx=10, pady=10, bd=2, relief="groove")
     proxy_frame.grid(row=4, column=0, sticky="ew", pady=10)
+    
+    # Backup Current Config button
+    btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[3].get(), entries[4].get(), entries[5].get()))
+    btn_backup_config.grid(row=0, column=0, padx=10, sticky="w")
 
     # Migrate Proxy Services button
     btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry))
-    btn_migrate_proxy_services.grid(row=0, column=0, columnspan=3, pady=20)
+    btn_migrate_proxy_services.grid(row=1, column=0, pady=20)
 
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
