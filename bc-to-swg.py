@@ -72,7 +72,7 @@ def migrate_action(src_type, entries, file_entry):
         cleaned_file = clean_and_save_routes(source_file)
         post_routes(entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
 
-def backup_config(dest_ip, dest_user, dest_pass):
+def backup_config(dest_ip, dest_port, dest_user, dest_pass):
     # Prompt user for the backup file name
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     default_filename = f"{dest_ip}-{timestamp}.backup"
@@ -81,7 +81,7 @@ def backup_config(dest_ip, dest_user, dest_pass):
         return  # User canceled, do nothing
     
     try:
-        curl_command = f'curl -k -b cookies.txt -u {dest_user}:{dest_pass} -X POST https://{dest_ip}:{entries[5].get()}/Konfigurator/REST/backup -o {backup_file}'
+        curl_command = f'curl -k -b cookies.txt -u {dest_user}:{dest_pass} -X POST https://{dest_ip}:{dest_port}/Konfigurator/REST/backup -o {backup_file}'
         subprocess.run(curl_command, shell=True, check=True)
         messagebox.showinfo("Backup Config", f"Backup successful! Configuration saved as: {backup_file}")
     except subprocess.CalledProcessError as e:
@@ -270,7 +270,7 @@ def main():
     proxy_frame.grid(row=4, column=0, sticky="ew", pady=10)
     
     # Backup Current Config button
-    btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[4].get(), entries[6].get(), entries[7].get()))
+    btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()))
     btn_backup_config.grid(row=0, column=0, padx=10, sticky="w")
 
     # Migrate Proxy Services button

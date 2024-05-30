@@ -28,7 +28,7 @@ def test_bc_connection(source_ip, username, password, port=22):
         errors = stderr.read().decode()
         
         # Extract the appliance ID using regex
-        match = re.search(r"Appliance Identifier\s*:\s*(\S+)", output)
+        match = re.search(r"Appliance identifier\s*:\s*(\S+)", output)
         if match:
             bcid = match.group(1)
             messagebox.showinfo("BlueCoat Connection Test", f"Successfully connected to BlueCoat and retrieved Identifier:\n{bcid}")
