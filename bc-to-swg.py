@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, ttk
 import subprocess
 import requests
 import webbrowser
@@ -144,7 +144,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1024x600")
+    root.geometry("900x600")
     root.resizable(False, False)
 
     src_type = tk.StringVar(value="live")
@@ -183,9 +183,13 @@ def main():
     btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_connection(entries[3].get(), entries[4].get(), entries[5].get()))
     btn_test_swg.grid(row=1, column=3, padx=10, sticky="w")
 
+    # Separator
+    separator = ttk.Separator(field_frame, orient='horizontal')
+    separator.grid(row=2, column=0, columnspan=4, sticky="ew", pady=10)
+
     # Static Routes
     staticroutes_frame = tk.LabelFrame(field_frame, text="Static Routes", padx=10, pady=10, bd=2, relief="groove")
-    staticroutes_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=10)
+    staticroutes_frame.grid(row=3, column=0, sticky="ew", pady=10)
 
     # Live data and file data radio buttons
     live_radio = tk.Radiobutton(staticroutes_frame, text="Live Data", variable=src_type, value="live")
@@ -212,6 +216,13 @@ def main():
     # Migrate button
     btn_migrate = tk.Button(staticroutes_frame, text="Migrate Static Routes", command=lambda: migrate_action(src_type, entries, file_entry))
     btn_migrate.grid(row=3, column=0, columnspan=3, pady=20)
+
+    # New buttons for Migrate Policy Lists and Migrate Proxy Services
+    btn_migrate_policy_lists = tk.Button(field_frame, text="Migrate Policy Lists", command=lambda: migrate_policy_lists(entries, file_entry))
+    btn_migrate_policy_lists.grid(row=3, column=1, padx=10, sticky="w")
+
+    btn_migrate_proxy_services = tk.Button(field_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry))
+    btn_migrate_proxy_services.grid(row=3, column=2, padx=10, sticky="w")
 
     button_frame = tk.Frame(root)
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
