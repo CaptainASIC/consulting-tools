@@ -160,10 +160,8 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
                         &lt;/complexEntry&gt;&lt;description&gt;&lt;/description&gt;&lt;/listEntry&gt;'''
         if mode == "append":
             # Append XML       
-            # Remove <link> tag using regex
-            modified_xml = re.sub(r'<link[^>]*\/?>', '', existing_xml)
-            # Insert new entries before </content></entry>
-            modified_xml = existing_xml.replace('</content></entry>', f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;{new_entries}&lt;/content&gt;&lt;/list&gt;</content></entry>')
+            # Insert new entries before </content>
+            modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
         else:
             #Overwrite XML
             modified_xml = f'''<entry><content>&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;12.2.2-46461&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;
