@@ -181,11 +181,9 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
         )
         curl_output = result.stdout
 
-        # Check for the second occurrence of warnings.warn(
-        warn_occurrences = curl_output.split("warnings.warn(")
-        if len(warn_occurrences) > 2:
-            error_reason = "\n".join(warn_occurrences[2:])
-            messagebox.showerror("Error", f"Failed to update routes: {error_reason}")
+        # Check if the last line contains </entry>
+        if '</entry>' not in curl_output:
+            messagebox.showerror("Error", f"Failed to update routes: {curl_output}")
             return
         
         # Commit changes
