@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.2.0"
+app_version = "2.2.1"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -50,15 +50,15 @@ def load_config(entries, file_entry):
         entries[7].delete(0, tk.END)
         entries[7].insert(0, config['DESTINATION'].get('Password', ''))
         entries[8].delete(0, tk.END)
-        entries[8].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
+        entries[8].insert(0, config['DESTINATION'].get('SSH_Port', '22'))
         entries[9].delete(0, tk.END)
-        entries[9].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
+        entries[9].insert(0, config['DESTINATION'].get('SSH_Username', ''))
         entries[10].delete(0, tk.END)
-        entries[10].insert(0, config['DESTINATION'].get('SSH_Port', '22'))
+        entries[10].insert(0, config['DESTINATION'].get('SSH_Password', ''))
         entries[11].delete(0, tk.END)
-        entries[11].insert(0, config['DESTINATION'].get('SSH_Username', ''))
+        entries[11].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
         entries[12].delete(0, tk.END)
-        entries[12].insert(0, config['DESTINATION'].get('SSH_Password', ''))
+        entries[12].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
 
     if 'FILE' in config:
         file_entry.delete(0, tk.END)
@@ -125,11 +125,11 @@ def save_config(entries, file_entry):
         'Port': entries[5].get(),
         'Username': entries[6].get(),
         'Password': entries[7].get(),
-        'Interface': entries[8].get(),
-        'Local Static Routes File': entries[9].get(),
-        'SSH_Port': entries[10].get(),
-        'SSH_Username': entries[11].get(),
-        'SSH_Password': entries[12].get()
+        'SSH_Port': entries[8].get(),
+        'SSH_Username': entries[9].get(),
+        'SSH_Password': entries[10].get(),
+        'Interface': entries[11].get(),
+        'Local_Static_Routes_File': entries[12].get()
     }
     config['FILE'] = {
         'Path': file_entry.get()
@@ -146,7 +146,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1050x800")
+    root.geometry("1050x900")
     root.resizable(False, False)
     root.configure(bg="gray15")
 
@@ -191,7 +191,7 @@ def main():
         entries.append(entry)
 
     entries[5].insert(0, "4712")
-    entries[10].insert(0, "22")
+    entries[8].insert(0, "22")
 
     btn_test_swg = tk.Button(field_frame, text="Test Connection\n to SWG", command=lambda: test_swg_connection(entries[4].get(), entries[6].get(), entries[7].get(), entries[5].get()), bg="gray60")
     btn_test_swg.grid(row=1, column=3, padx=10, sticky="w")
@@ -216,7 +216,7 @@ def main():
     interface_entry = tk.Entry(staticroutes_frame)
     interface_entry.grid(row=1, column=1, sticky="ew")
     entries.append(interface_entry)
-    entries[8].insert(0, "eth0")
+    entries[11].insert(0, "eth0")
 
     # File input field
     file_entry = tk.Entry(staticroutes_frame)
@@ -224,7 +224,7 @@ def main():
     browse_button = tk.Button(staticroutes_frame, text="Browse", command=lambda: choose_file(file_entry), bg="gray60")
     browse_button.grid(row=2, column=2, padx=10)
     entries.append(file_entry)
-    entries[9].insert(0, "staticroutes.csv")
+    entries[12].insert(0, "staticroutes.csv")
 
     # Append or Overwrite radio buttons
     append_radio = tk.Radiobutton(staticroutes_frame, text="Append Routes", variable=append_overwrite_type, value="append", bg="gray15", fg="goldenrod", selectcolor="gray15")
@@ -277,7 +277,7 @@ def main():
     maintenance_frame.grid(row=4, column=2, sticky="ew", pady=10)
 
     maintenance_tasks = [
-        ("Force API Logout", force_api_logout),
+        ("Force API Logout", lambda: force_api_logout(entries[4].get(), entries[5].get())),
         ("Show HA Stats", show_ha_stats),
         ("Restart MWG Service", restart_mwg_service),
         ("Restart MWG_UI Service", restart_mwg_ui_service),

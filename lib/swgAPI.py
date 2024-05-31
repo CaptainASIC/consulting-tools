@@ -17,8 +17,9 @@ def backup_config(dest_ip, dest_port, dest_user, dest_pass):
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Backup Config", f"Backup failed: {e}")
 
-def force_api_logout():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
+def force_api_logout(dest_ip, port):
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/logout'
+        subprocess.run(curl_command, shell=True)
 
 def migrate_policy_lists():
     messagebox.showinfo("Info", "Feature not yet implemented.")

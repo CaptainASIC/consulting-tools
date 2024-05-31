@@ -12,6 +12,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
+from swgAPI import force_api_logout
 
 def fetch_static_routes(source_ip, username, password, filename, port=22):
     # Attempt to fetch static routes via SSH
@@ -191,8 +192,7 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
         subprocess.run(curl_command, shell=True)
 
         # Logout
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/logout'
-        subprocess.run(curl_command, shell=True)
+        force_api_logout(dest_ip, port)
 
         messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
