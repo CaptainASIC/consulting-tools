@@ -174,8 +174,19 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
             new_xml_file.write(modified_xml)
 
         # Step 3: Upload the modified XML
-        curl_command = f'curl -k -c cookies.txt -u {dest_user}:{dest_pass} -X PUT -d @{new_xml_file.name} {route_url} -H "Content-Type: application/xml"'
-        subprocess.run(curl_command, shell=True)
+        result = subprocess.run(
+            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{new_xml_file.name}', f'{route_url}', '-H', 'Content-Type: application/xml'],
+            capture_output=True,
+            text=True
+        )
+        curl_output = result.stdout.splitlines()
+        curl_error = result.stderr.splitlines()
+        
+        # Check the second-to-last line for warnings.warn(
+        if len(curl_error) >= 2 and "warnings.warn(" in curl_error[-2]:
+            error_reason = curl_error[-1]
+            messagebox.showerror("Error", f"Failed to update routes: {error_reason}")
+            return
         
         # Commit changes
         curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
@@ -187,4 +198,6 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
 
         messagebox.showinfo("Success", "Routes have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to update routes: {e}")
+    except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Failed to update routes: {e}")
