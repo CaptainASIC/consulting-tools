@@ -181,12 +181,8 @@ def post_routes(app_version, dest_ip, dest_user, dest_pass, dest_interface, file
         )
         curl_output = result.stderr
 
-        # Check for the second occurrence of warnings.warn(
-        warn_occurrences = curl_output.split("warnings.warn(")
-        if len(warn_occurrences) > 2:
-            error_reason = "\n".join(warn_occurrences[2:])
-            messagebox.showerror("Error", f"Failed to update routes: {error_reason}")
-            return
+        messagebox.showerror("Error", f"Failed to update routes: {curl_output}")
+        return
         
         # Commit changes
         curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
