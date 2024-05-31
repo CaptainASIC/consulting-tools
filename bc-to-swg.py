@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.1.0 Beta"
+app_version = "2.1.0"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -146,6 +146,14 @@ def save_config(entries, file_entry):
 def on_exit(entries, file_entry, root):
     save_config(entries, file_entry)
     root.quit()
+
+def migrate_policy_lists(entries, file_entry):
+    # Placeholder function for migrating policy lists
+    messagebox.showinfo("Info", "Migrate Policy Lists function is not yet implemented.")
+
+def migrate_proxy_services(entries, file_entry):
+    # Placeholder function for migrating proxy services
+    messagebox.showinfo("Info", "Migrate Proxy Services function is not yet implemented.")
 
 def main():
     root = tk.Tk()
