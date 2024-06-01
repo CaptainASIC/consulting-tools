@@ -1,6 +1,7 @@
 from tkinter import messagebox
 import paramiko
 from datetime import datetime
+import re
 
 def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password):
     # Fetch proxy services from Bluecoat using SSH
@@ -66,8 +67,9 @@ def process_service_block(service_lines, converted_lines, service_type):
         if line.startswith("Source IP"):
             capture = True
         elif capture and line.strip() and not line.strip().endswith("Bypass"):
-            converted_line = f"{service_type},{line.replace('\t', ',')}"
-            converted_lines.append(converted_line.replace('\t', ','))
+            # Replace all whitespace (tabs and spaces) with commas
+            converted_line = f"{service_type}," + re.sub(r'\s+', ',', line.strip())
+            converted_lines.append(converted_line)
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password):
     try:
