@@ -17,7 +17,7 @@ def show_ha_stats(dest_ip, ssh_port, ssh_username, ssh_password):
         if error_output:
             raise Exception(error_output)
         else:
-            messagebox.showinfo("Success", command_output")
+            messagebox.showinfo("Success", command_output)
     
     except Exception as e:
         messagebox.showerror("Error", str(e))
@@ -41,7 +41,7 @@ def restart_mwg_service(dest_ip, ssh_port, ssh_username, ssh_password):
         if error_output:
             raise Exception(error_output)
         else:
-            messagebox.showinfo("Success", command_output")
+            messagebox.showinfo("Success", command_output)
     
     except Exception as e:
         messagebox.showerror("Error", str(e))
@@ -65,7 +65,7 @@ def restart_mwg_ui_service(dest_ip, ssh_port, ssh_username, ssh_password):
         if error_output:
             raise Exception(error_output)
         else:
-            messagebox.showinfo("Success", command_output")
+            messagebox.showinfo("Success", command_output)
     
     except Exception as e:
         messagebox.showerror("Error", str(e))
