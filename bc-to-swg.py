@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.2.1"
+app_version = "2.2.2"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -146,7 +146,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1050x900")
+    root.geometry("1050x1000")
     root.resizable(False, False)
     root.configure(bg="gray15")
 
@@ -278,10 +278,10 @@ def main():
 
     maintenance_tasks = [
         ("Force API Logout", lambda: force_api_logout(entries[4].get(), entries[5].get())),
-        ("Show HA Stats", show_ha_stats),
-        ("Restart MWG Service", restart_mwg_service),
-        ("Restart MWG_UI Service", restart_mwg_ui_service),
-        ("Reboot Appliance", reboot_appliance)
+        ("Show HA Stats", lambda: show_ha_stats(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Restart MWG Service", lambda: restart_mwg_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Restart MWG_UI Service", lambda: restart_mwg_ui_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Reboot Appliance", lambda: reboot_appliance(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get()))
     ]
 
     for i, (task_name, task_command) in enumerate(maintenance_tasks):

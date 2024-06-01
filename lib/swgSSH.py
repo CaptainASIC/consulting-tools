@@ -1,11 +1,98 @@
-def show_ha_stats():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
+import paramiko
+from tkinter import messagebox
 
-def restart_mwg_service():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
+def show_ha_stats(dest_ip, ssh_port, ssh_username, ssh_password):
+    # Execute hastats command
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username, password, and port
+        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        
+        # Run the command
+        stdin, stdout, stderr = client.exec_command("hastats")
+        error_output = stderr.read().decode()
+        command_output = stdout.read().decode()
+        if error_output:
+            raise Exception(error_output)
+        else:
+            messagebox.showinfo("Success", command_output")
+    
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
 
-def restart_mwg_ui_service():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
+def restart_mwg_service(dest_ip, ssh_port, ssh_username, ssh_password):
+    # Attempt to restart the MWG Service via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username, password, and port
+        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        
+        # Run the command
+        stdin, stdout, stderr = client.exec_command("service mwg restart")
+        error_output = stderr.read().decode()
+        command_output = stdout.read().decode()
+        if error_output:
+            raise Exception(error_output)
+        else:
+            messagebox.showinfo("Success", command_output")
+    
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
 
-def reboot_appliance():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
+def restart_mwg_ui_service(dest_ip, ssh_port, ssh_username, ssh_password):
+    # Attempt to restart the MWG-UI Service via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username, password, and port
+        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        
+        # Run the command
+        stdin, stdout, stderr = client.exec_command("service mwg-ui restart")
+        error_output = stderr.read().decode()
+        command_output = stdout.read().decode()
+        if error_output:
+            raise Exception(error_output)
+        else:
+            messagebox.showinfo("Success", command_output")
+    
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
+
+def reboot_appliance(dest_ip, ssh_port, ssh_username, ssh_password):
+    # Attempt to reboot the appliance via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username, password, and port
+        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        
+        # Run the reboot command
+        stdin, stdout, stderr = client.exec_command("reboot")
+        error_output = stderr.read().decode()
+        
+        if error_output:
+            raise Exception(error_output)
+        else:
+            messagebox.showinfo("Success", "Reboot command has been sent.")
+    
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
