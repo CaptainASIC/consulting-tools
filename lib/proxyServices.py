@@ -29,8 +29,8 @@ def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, 
 def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
     # Convert Bluecoat proxy services to SkyHigh format
     converted_lines = []
-    capture = False
     current_service_lines = []
+    service_type = ""
 
     bluecoat_lines = bluecoat_proxy_services.splitlines()
 
@@ -38,28 +38,34 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
         if line.startswith("Service Name:"):
             if current_service_lines:
                 # Process the current service
-                process_service_block(current_service_lines, converted_lines)
+                process_service_block(current_service_lines, converted_lines, service_type)
                 current_service_lines = []
-            capture = False
-        
+            service_type = ""
+
         current_service_lines.append(line)
 
-        if line.startswith("Proxy:") and ("HTTP" in line or "TCP Tunnel" in line or "FTP" in line):
-            capture = True
+        if line.startswith("Proxy:"):
+            if "HTTP" in line:
+                service_type = "HTTP"
+            elif "TCP Tunnel" in line:
+                service_type = "TCP"
+            elif "FTP" in line:
+                service_type = "FTP"
 
     if current_service_lines:
-        process_service_block(current_service_lines, converted_lines)
+        process_service_block(current_service_lines, converted_lines, service_type)
 
     converted_data = "\n".join(converted_lines)
     return converted_data
 
-def process_service_block(service_lines, converted_lines):
+def process_service_block(service_lines, converted_lines, service_type):
     capture = False
     for line in service_lines:
         if line.startswith("Source IP"):
             capture = True
         elif capture and line.strip() and not line.endswith("Bypass"):
-            converted_lines.append(line.replace("\t", ","))
+            converted_line = f"{service_type},{line.replace('\t', ',')}"
+            converted_lines.append(converted_line)
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password):
     try:
@@ -80,3 +86,4 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
     
     except Exception as e:
         messagebox.showerror("Error", f"Failed to migrate proxy services: {e}")
+
