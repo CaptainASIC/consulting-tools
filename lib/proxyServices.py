@@ -52,8 +52,6 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
                 service_type = "TCP"
             elif "FTP" in line:
                 service_type = "FTP"
-            elif "Telnet" in line:
-                service_type = "Telnet"
 
     if current_service_lines:
         process_service_block(current_service_lines, converted_lines, service_type)
