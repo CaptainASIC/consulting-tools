@@ -1,5 +1,4 @@
-from tkinter import messagebox, filedialog, ttk, Canvas
-import subprocess
+from tkinter import messagebox
 import paramiko
 from datetime import datetime
 
@@ -31,21 +30,36 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
     # Convert Bluecoat proxy services to SkyHigh format
     converted_lines = []
     capture = False
+    current_service_lines = []
 
-    for line in bluecoat_proxy_services.splitlines():
+    bluecoat_lines = bluecoat_proxy_services.splitlines()
+
+    for line in bluecoat_lines:
         if line.startswith("Service Name:"):
+            if current_service_lines:
+                # Process the current service
+                process_service_block(current_service_lines, converted_lines)
+                current_service_lines = []
             capture = False
+        
+        current_service_lines.append(line)
 
         if line.startswith("Proxy:") and ("HTTP" in line or "TCP Tunnel" in line or "FTP" in line):
             capture = True
 
-        if capture and line.startswith("Source IP"):
-            next_line = next(bluecoat_proxy_services.splitlines())
-            if not next_line.endswith("Bypass"):
-                converted_lines.append(next_line.replace("\t", ","))
+    if current_service_lines:
+        process_service_block(current_service_lines, converted_lines)
 
     converted_data = "\n".join(converted_lines)
     return converted_data
+
+def process_service_block(service_lines, converted_lines):
+    capture = False
+    for line in service_lines:
+        if line.startswith("Source IP"):
+            capture = True
+        elif capture and line.strip() and not line.endswith("Bypass"):
+            converted_lines.append(line.replace("\t", ","))
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password):
     try:
