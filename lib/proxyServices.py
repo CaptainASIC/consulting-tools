@@ -3,7 +3,7 @@ import subprocess
 import paramiko
 from datetime import datetime
 
-def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)):
+def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password):
     # Fetch proxy services from Bluecoat using SSH
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -36,7 +36,7 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
         if line.startswith("Service Name:"):
             capture = False
 
-        if "Proxy: HTTP" in line or "Proxy: TCP Tunnel" in line or "Proxy: FTP" in line:
+        if line.startswith("Proxy:") and ("HTTP" in line or "TCP Tunnel" in line or "FTP" in line):
             capture = True
 
         if capture and line.startswith("Source IP"):
