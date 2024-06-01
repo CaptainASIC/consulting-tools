@@ -270,7 +270,7 @@ def main():
     btn_backup_config.grid(row=0, column=0, padx=10, sticky="w")
 
     # Migrate Proxy Services button
-    btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries, file_entry), bg="gray60")
+    btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries[0].get(), entries[1].get(), entries[2].get(), entries[3].get()), bg="gray60")
     btn_migrate_proxy_services.grid(row=1, column=0, pady=20)
 
     # SWG Maintenance Tasks section
