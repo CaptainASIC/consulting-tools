@@ -51,6 +51,8 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
                 service_type = "TCP"
             elif "FTP" in line:
                 service_type = "FTP"
+            elif "Telnet" in line:
+                service_type = "Telnet"
 
     if current_service_lines:
         process_service_block(current_service_lines, converted_lines, service_type)
@@ -63,9 +65,9 @@ def process_service_block(service_lines, converted_lines, service_type):
     for line in service_lines:
         if line.startswith("Source IP"):
             capture = True
-        elif capture and line.strip() and not line.endswith("Bypass"):
+        elif capture and line.strip() and not line.strip().endswith("Bypass"):
             converted_line = f"{service_type},{line.replace('\t', ',')}"
-            converted_lines.append(converted_line)
+            converted_lines.append(converted_line.replace('\t', ','))
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password):
     try:
@@ -86,4 +88,3 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
     
     except Exception as e:
         messagebox.showerror("Error", f"Failed to migrate proxy services: {e}")
-
