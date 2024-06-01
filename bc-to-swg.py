@@ -24,7 +24,8 @@ sys.path.append(str(lib_dir))
 from staticRoutes import fetch_static_routes, clean_and_save_routes, post_routes
 from connectionTest import test_bc_connection, test_swg_connection
 from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, reboot_appliance
-from swgAPI import backup_config, force_api_logout, migrate_policy_lists, migrate_proxy_services
+from swgAPI import backup_config, force_api_logout, migrate_policy_lists
+from proxyServices import migrate_proxy_services
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()

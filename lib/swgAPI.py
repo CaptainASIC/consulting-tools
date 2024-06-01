@@ -23,6 +23,3 @@ def force_api_logout(dest_ip, port):
 
 def migrate_policy_lists():
     messagebox.showinfo("Info", "Feature not yet implemented.")
-
-def migrate_proxy_services():
-    messagebox.showinfo("Info", "Feature not yet implemented.")
