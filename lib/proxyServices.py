@@ -3,14 +3,14 @@ import subprocess
 import paramiko
 from datetime import datetime
 
-def fetch_proxy_services_from_bluecoat(dest_ip, ssh_port, ssh_username, ssh_password):
+def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)):
     # Fetch proxy services from Bluecoat using SSH
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
         # Connect to the host using username, password, and port
-        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        client.connect(source_ip, port=source_port, username=source_username, password=source_password, timeout=10)
         
         # Run the command to get proxy services
         stdin, stdout, stderr = client.exec_command("show proxy-services")
@@ -58,7 +58,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
 
         # Step 3: Save converted proxy services to a temporary file
-        temp_proxy_services_file = "source_ip_proxy_services.csv"
+        temp_proxy_services_file = f"{source_ip}_proxy_services.csv"
         with open(temp_proxy_services_file, "w") as file:
             file.write(skyhigh_proxy_services)
 
