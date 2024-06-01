@@ -47,10 +47,10 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
     converted_data = "\n".join(converted_lines)
     return converted_data
 
-def migrate_proxy_services(dest_ip, ssh_port, ssh_username, ssh_password):
+def migrate_proxy_services(source_ip, source_port, source_username, source_password):
     try:
         # Step 1: Fetch proxy services from Bluecoat
-        bluecoat_proxy_services = fetch_proxy_services_from_bluecoat(dest_ip, ssh_port, ssh_username, ssh_password)
+        bluecoat_proxy_services = fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)
         if not bluecoat_proxy_services:
             return
         
