@@ -23,3 +23,24 @@ def force_api_logout(dest_ip, port):
 
 def migrate_policy_lists():
     messagebox.showinfo("Info", "Feature not yet implemented.")
+
+def get_appliance_uuid(dest_ip, dest_user, dest_pass, port=4712):
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header}
+    url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances"
+    
+    try:
+        response = requests.get(url, headers=headers, verify=False)
+        response.raise_for_status()
+
+        # Log the raw XML for debugging
+        print("Raw XML Response:", response.text)
+
+        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
+        root = ET.fromstring(response.content)
+        uuid = root.find('.//entry/id').text
+
+        return uuid
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
+        return None

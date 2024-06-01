@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from swgAPI import force_api_logout
+from swgAPI import force_api_logout, get_appliance_uuid
 
 def fetch_static_routes(source_ip, username, password, filename, port=22):
     # Attempt to fetch static routes via SSH
@@ -79,27 +79,6 @@ def clean_and_save_routes(filename):
 
     messagebox.showinfo("Info", f"Cleaned BlueCoat static routes have been saved to {cleaned_filename}.")
     return cleaned_filename
-
-def get_appliance_uuid(dest_ip, dest_user, dest_pass, port=4712):
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
-    headers = {"Authorization": auth_header}
-    url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances"
-    
-    try:
-        response = requests.get(url, headers=headers, verify=False)
-        response.raise_for_status()
-
-        # Log the raw XML for debugging
-        print("Raw XML Response:", response.text)
-
-        # Parsing XML to get UUID, assuming response is XML and contains <entry><id>UUID</id></entry>
-        root = ET.fromstring(response.content)
-        uuid = root.find('.//entry/id').text
-
-        return uuid
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to fetch UUID: {e}")
-        return None
 
 def get_network_routes(dest_ip, dest_user, dest_pass, port=4712):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
