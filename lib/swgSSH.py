@@ -11,7 +11,7 @@ def show_ha_stats(dest_ip, ssh_port, ssh_username, ssh_password):
         client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
         
         # Run the command
-        stdin, stdout, stderr = client.exec_command("hastats")
+        stdin, stdout, stderr = client.exec_command("hastats all")
         error_output = stderr.read().decode()
         command_output = stdout.read().decode()
         if error_output:
