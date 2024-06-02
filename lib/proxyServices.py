@@ -113,7 +113,7 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
     if not uuid:
         return  # Stop if UUID could not be retrieved
 
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}").encode().decode("utf-8")
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
 
     try:
