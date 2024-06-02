@@ -58,13 +58,13 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
 
         if line.startswith("Proxy:"):
             if "HTTP" in line:
-                service_type = "HTTP"
+                service_type = "XXXHTTP"
             elif "TCP Tunnel" in line:
-                service_type = "TCP"
+                service_type = "XXXTCP"
             elif "FTP" in line:
                 service_type = "FTP"
             elif "Telnet" in line:
-                service_type = "TCP"
+                service_type = "XXXTCP"
 
     if current_service_lines:
         process_service_block(current_service_lines, converted_lines, service_type)
@@ -113,45 +113,74 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
     if not uuid:
         return  # Stop if UUID could not be retrieved
 
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}").encode().decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
 
-    route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/HTTPListener"
-    try:
-        response = requests.get(route_url, headers=headers, verify=False)
-        existing_xml = response.text
-    except requests.exceptions.RequestException as e:
-        messagebox.showerror("Error", f"Failed to fetch existing proxy services: {e}")
-        return
-
-    # Step 2: Modify the XML with new routes
     try:
         with open(filename, "r") as file:
             new_routes = file.readlines()
+
         new_entries = ''
-        for line in new_routes:
-            parts = line.strip().split(',')
-            if len(parts) >= 3:
-                new_entries += f'''
-                    &lt;listEntry&gt;
-                        &lt;complexEntry&gt;
-                            &lt;configurationProperties&gt;
-                                &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
-                                &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
-                                &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
-                            &lt;/configurationProperties&gt;
-                        &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+        # Determine the proxy service type and set the route_url and new_entries accordingly
+        if new_routes[0].startswith("HTTP"):
+            route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/HTTPListener"
+            for line in new_routes:
+                parts = line.strip().split(',')
+                if len(parts) >= 3:
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                                    &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                    &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
+                                    &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+        elif new_routes[0].startswith("FTP"):
+            route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/FTPListener"
+            for line in new_routes:
+                parts = line.strip().split(',')
+                if len(parts) >= 3:
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="allowClientPassive" type="com.scur.type.boolean" value="true"/&gt;
+                                    &lt;configurationProperty key="dataPort" type="com.scur.type.number" value="2020"/&gt;
+                                    &lt;configurationProperty key="serverPortRange" type="com.scur.type.string" value="20001-25000"/&gt;
+                                    &lt;configurationProperty key="clientPortRange" type="com.scur.type.string" value="15000-20000"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" value="true"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnectionAsClient" type="com.scur.type.boolean" value="false"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+        elif new_routes[0].startswith("TCP"):
+            route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/TCPListener"
+            for line in new_routes:
+                parts = line.strip().split(',')
+                if len(parts) >= 3:
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+        else:
+            messagebox.showerror("Error", "Unknown proxy service type.")
+            return
 
         # Append XML       
         # Insert new entries before </content>
         modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
 
         # Save the modified XML locally for testing
-        with open('new_routes.xml', 'w') as new_xml_file:
+        with open('proxy_services.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
 
         # Step 3: Upload the modified XML
@@ -167,8 +196,6 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
             messagebox.showerror("Error", f"Failed to update proxy services: {curl_output}")
             return
         
-
-        # Add FTP and TCP here later
 
         # Commit changes
         curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
