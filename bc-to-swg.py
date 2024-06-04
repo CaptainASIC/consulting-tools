@@ -65,10 +65,6 @@ def load_config(entries, file_entry):
         file_entry.delete(0, tk.END)
         file_entry.insert(0, config['FILE'].get('Path', ''))
 
-def build_xml_payload(filename,uuid):
-    with open(filename, "r") as file:
-        lines = file.readlines()
-
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly

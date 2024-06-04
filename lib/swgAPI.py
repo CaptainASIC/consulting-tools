@@ -1,6 +1,9 @@
 from tkinter import messagebox, filedialog, ttk, Canvas
 import subprocess
 from datetime import datetime
+from base64 import b64encode
+import requests
+from xml.etree import ElementTree as ET
 
 def backup_config(dest_ip, dest_port, dest_user, dest_pass):
     # Prompt user for the backup file name
