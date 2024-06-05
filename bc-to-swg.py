@@ -143,7 +143,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1050x1000")
+    root.geometry("1100x1000")
     root.resizable(False, False)
     root.configure(bg="gray15")
 
