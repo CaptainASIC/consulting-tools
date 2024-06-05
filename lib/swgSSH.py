@@ -1,5 +1,5 @@
 import paramiko
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 
 def show_ha_stats(dest_ip, ssh_port, ssh_username, ssh_password):
     # Execute hastats command
@@ -90,6 +90,35 @@ def reboot_appliance(dest_ip, ssh_port, ssh_username, ssh_password):
             raise Exception(error_output)
         else:
             messagebox.showinfo("Success", "Reboot command has been sent.")
+    
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+    finally:
+        # Close the connection
+        client.close()
+
+def rollback(dest_ip, ssh_port, ssh_username, ssh_password):
+    # Prompt the user for the number of configurations to revert
+    num_revisions = simpledialog.askinteger("Config Rollback", "Enter the number of configurations to revert:", initialvalue=1)
+    if num_revisions is None:
+        return  # User canceled, do nothing
+
+    # Attempt to rollback the configuration via SSH
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Connect to the host using username, password, and port
+        client.connect(dest_ip, port=ssh_port, username=ssh_username, password=ssh_password, timeout=10)
+        
+        # Run the rollback command
+        stdin, stdout, stderr = client.exec_command(f"/opt/mwg/bin/cfgrollback.sh {num_revisions}")
+        error_output = stderr.read().decode()
+        command_output = stdout.read().decode()
+        if error_output:
+            raise Exception(error_output)
+        else:
+            messagebox.showinfo("Success", f"Configuration has been reverted by {num_revisions} revision(s).")
     
     except Exception as e:
         messagebox.showerror("Error", str(e))

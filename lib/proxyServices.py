@@ -105,11 +105,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         for service_type in service_types:
             if messagebox.askyesno("Migrate Proxy Services", f"Do you want to migrate {service_type} Proxy Services?"):
                 post_proxy_services(app_version, dest_ip, dest_user, dest_pass, temp_proxy_services_file, dest_port, service_type)
-                commit_changes(dest_ip, dest_port)
 
-        # Logout
-        force_api_logout(dest_ip, dest_port)
-        
         messagebox.showinfo("Success", f"Proxy services have been fetched, converted, saved to {temp_proxy_services_file}, and uploaded to the Skyhigh Web Gateway.")
     
     except Exception as e:
@@ -211,11 +207,15 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
             messagebox.showerror("Error", f"Failed to update {service_type} proxy services: {curl_output}")
             return
 
+        # Commit changes
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
+        subprocess.run(curl_command, shell=True)
+
+        # Logout
+        force_api_logout(dest_ip, port)
+
+        messagebox.showinfo("Success", f"{service_type} Proxy Services have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
-
-def commit_changes(dest_ip, port):
-    curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
-    subprocess.run(curl_command, shell=True)

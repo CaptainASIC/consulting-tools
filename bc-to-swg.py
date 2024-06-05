@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog, ttk, Canvas
+from tkinter import messagebox, filedialog, ttk, Canvas, simpledialog
 import subprocess
 import requests
 import webbrowser
@@ -23,7 +23,7 @@ sys.path.append(str(lib_dir))
 # Import modules from the 'lib' directory
 from staticRoutes import fetch_static_routes, clean_and_save_routes, post_routes
 from connectionTest import test_bc_connection, test_swg_connection
-from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, reboot_appliance
+from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, reboot_appliance, rollback
 from swgAPI import backup_config, force_api_logout, migrate_policy_lists
 from proxyServices import migrate_proxy_services
 
@@ -276,6 +276,7 @@ def main():
     maintenance_tasks = [
         ("Force API Logout", lambda: force_api_logout(entries[4].get(), entries[5].get())),
         ("Show HA Stats", lambda: show_ha_stats(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Config Rollback", lambda: rollback(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
         ("Restart MWG Service", lambda: restart_mwg_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
         ("Restart MWG_UI Service", lambda: restart_mwg_ui_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
         ("Reboot Appliance", lambda: reboot_appliance(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get()))
@@ -283,7 +284,7 @@ def main():
 
     for i, (task_name, task_command) in enumerate(maintenance_tasks):
         btn_task = tk.Button(maintenance_frame, text=task_name, command=task_command, bg="gray60")
-        btn_task.grid(row=i, column=0, padx=10, pady=5, sticky="ew")
+        btn_task.grid(row=i // 2, column=i % 2, padx=10, pady=5, sticky="ew")
 
     button_frame = tk.Frame(root, bg="gray15")
     button_frame.pack(side='bottom', fill='x', padx=20, pady=20)
