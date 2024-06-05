@@ -58,13 +58,13 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
 
         if line.startswith("Proxy:"):
             if "HTTP" in line:
-                service_type = "XXXHTTP"
+                service_type = "HTTP"
             elif "TCP Tunnel" in line:
-                service_type = "XXXTCP"
+                service_type = "TCP"
             elif "FTP" in line:
                 service_type = "FTP"
             elif "Telnet" in line:
-                service_type = "XXXTCP"
+                service_type = "TCP"
 
     if current_service_lines:
         process_service_block(current_service_lines, converted_lines, service_type)
@@ -100,116 +100,122 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         with open(temp_proxy_services_file, "w") as file:
             file.write(skyhigh_proxy_services)
 
-        # Step 4: Upload to SWG
-        post_proxy_services(app_version, dest_ip, dest_user, dest_pass, temp_proxy_services_file, dest_port)
+        # Step 4: Ask user to migrate each service type
+        service_types = ["HTTP", "FTP", "TCP"]
+        for service_type in service_types:
+            if messagebox.askyesno("Migrate Proxy Services", f"Do you want to migrate {service_type} Proxy Services?"):
+                post_proxy_services(app_version, dest_ip, dest_user, dest_pass, temp_proxy_services_file, dest_port, service_type)
+                commit_changes(dest_ip, dest_port)
 
+        # Logout
+        force_api_logout(dest_ip, dest_port)
+        
         messagebox.showinfo("Success", f"Proxy services have been fetched, converted, saved to {temp_proxy_services_file}, and uploaded to the Skyhigh Web Gateway.")
     
     except Exception as e:
         messagebox.showerror("Error", f"Failed to migrate proxy services: {e}")
 
-def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, port=4712):
+def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, port=4712, service_type="HTTP"):
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
 
-    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}").encode().decode("utf-8")
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
 
-    # Step 1: Fetch existing configurations for HTTP, FTP, and TCP services
+    # Determine the route URL based on the service type
     service_urls = {
         "HTTP": f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/HTTPListener",
         "FTP": f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/FTPListener",
         "TCP": f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.proxy.configuration/property/TCPListener"
     }
 
-    existing_configs = {}
-    for service_type, route_url in service_urls.items():
-        try:
-            response = requests.get(route_url, headers=headers, verify=False)
-            existing_configs[service_type] = response.text
-        except requests.exceptions.RequestException as e:
-            messagebox.showerror("Error", f"Failed to fetch existing {service_type} Proxy Services: {e}")
-            return
+    route_url = service_urls.get(service_type)
+    if not route_url:
+        messagebox.showerror("Error", "Unknown proxy service type.")
+        return
+
+    # Fetch existing configuration
+    try:
+        response = requests.get(route_url, headers=headers, verify=False)
+        existing_xml = response.text
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to fetch existing {service_type} Proxy Services: {e}")
+        return
 
     try:
         with open(filename, "r") as file:
             new_routes = file.readlines()
 
-        for service_type, existing_xml in existing_configs.items():
-            new_entries = ''
-            for line in new_routes:
-                parts = line.strip().split(',')
-                if len(parts) >= 3 and parts[0] == service_type:
-                    if service_type == "HTTP":
-                        new_entries += f'''
-                            &lt;listEntry&gt;
-                                &lt;complexEntry&gt;
-                                    &lt;configurationProperties&gt;
-                                        &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
-                                        &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                        &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                        &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                        &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                        &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
-                                        &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
-                                    &lt;/configurationProperties&gt;
-                                &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
-                    elif service_type == "FTP":
-                        new_entries += f'''
-                            &lt;listEntry&gt;
-                                &lt;complexEntry&gt;
-                                    &lt;configurationProperties&gt;
-                                        &lt;configurationProperty key="interface" type="com.scur.type.string" value="{parts[1]}:{parts[2]}"/&gt;
-                                        &lt;configurationProperty key="allowClientPassive" type="com.scur.type.boolean" value="true"/&gt;
-                                        &lt;configurationProperty key="dataPort" type="com.scur.type.number" value="2020"/&gt;
-                                        &lt;configurationProperty key="serverPortRange" type="com.scur.type.string" value="20001-25000"/&gt;
-                                        &lt;configurationProperty key="clientPortRange" type="com.scur.type.string" value="15000-20000"/&gt;
-                                        &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" value="true"/&gt;
-                                        &lt;configurationProperty key="serverPassiveConnectionAsClient" type="com.scur.type.boolean" value="false"/&gt;
-                                    &lt;/configurationProperties&gt;
-                                &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
-                    elif service_type == "TCP":
-                        new_entries += f'''
-                            &lt;listEntry&gt;
-                                &lt;complexEntry&gt;
-                                    &lt;configurationProperties&gt;
-                                        &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
-                                        &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                        &lt;configurationProperty key="enabled_tcp_half_close" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                    &lt;/configurationProperties&gt;
-                                &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+        new_entries = ''
+        for line in new_routes:
+            parts = line.strip().split(',')
+            if len(parts) >= 3 and parts[0] == service_type:
+                if service_type == "HTTP":
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                                    &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                    &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
+                                    &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+                elif service_type == "FTP":
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="allowClientPassive" type="com.scur.type.boolean" value="true"/&gt;
+                                    &lt;configurationProperty key="dataPort" type="com.scur.type.number" value="2020"/&gt;
+                                    &lt;configurationProperty key="serverPortRange" type="com.scur.type.string" value="20001-25000"/&gt;
+                                    &lt;configurationProperty key="clientPortRange" type="com.scur.type.string" value="15000-20000"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" value="true"/&gt;
+                                    &lt;configurationProperty key="serverPassiveConnectionAsClient" type="com.scur.type.boolean" value="false"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+                elif service_type == "TCP":
+                    new_entries += f'''
+                        &lt;listEntry&gt;
+                            &lt;complexEntry&gt;
+                                &lt;configurationProperties&gt;
+                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                    &lt;configurationProperty key="enabled_tcp_half_close" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                                &lt;/configurationProperties&gt;
+                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
 
-            # Append XML
-            # Insert new entries before </content>
-            modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
+        # Append XML
+        # Insert new entries before </content>
+        modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
 
-            # Save the modified XML locally for testing
-            with open(f'{service_type.lower()}_services.xml', 'w') as new_xml_file:
-                new_xml_file.write(modified_xml)
+        # Save the modified XML locally for testing
+        with open(f'{service_type.lower()}_services.xml', 'w') as new_xml_file:
+            new_xml_file.write(modified_xml)
 
-            # Step 3: Upload the modified XML
-            result = subprocess.run(
-                ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{new_xml_file.name}', f'{service_urls[service_type]}', '-H', 'Content-Type: application/xml'],
-                capture_output=True,
-                text=True
-            )
-            curl_output = result.stdout
+        # Step 3: Upload the modified XML
+        result = subprocess.run(
+            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{new_xml_file.name}', f'{route_url}', '-H', 'Content-Type: application/xml'],
+            capture_output=True,
+            text=True
+        )
+        curl_output = result.stdout
 
-            # Check if the last line contains </entry>
-            if '</entry>' not in curl_output:
-                messagebox.showerror("Error", f"Failed to update {service_type} proxy services: {curl_output}")
-                return
+        # Check if the last line contains </entry>
+        if '</entry>' not in curl_output:
+            messagebox.showerror("Error", f"Failed to update {service_type} proxy services: {curl_output}")
+            return
 
-        # Commit changes
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
-        subprocess.run(curl_command, shell=True)
-
-        # Logout
-        force_api_logout(dest_ip, port)
-
-        messagebox.showinfo("Success", "Proxy Services have been updated, committed, and logout was successful.\nPlease log in to the GUI and verify the changes.")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
+
+def commit_changes(dest_ip, port):
+    curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
+    subprocess.run(curl_command, shell=True)
