@@ -149,41 +149,41 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
             if len(parts) >= 3 and parts[0] == service_type:
                 if service_type == "HTTP":
                     new_entries += f'''
-                        &lt;listEntry&gt;
-                            &lt;complexEntry&gt;
-                                &lt;configurationProperties&gt;
-                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
-                                    &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                    &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
-                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                    &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
-                                    &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
-                                &lt;/configurationProperties&gt;
-                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+    &lt;listEntry&gt;
+        &lt;complexEntry&gt;
+            &lt;configurationProperties&gt;
+                &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                &lt;configurationProperty key="transparent_requests" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                &lt;configurationProperty key="transparent_cn_handling" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" encrypted="false" value="true"/&gt;
+                &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+                &lt;configurationProperty key="sslPorts" type="com.scur.type.string" encrypted="false" value="443"/&gt;
+                &lt;configurationProperty key="mss" type="com.scur.type.number" encrypted="false" value="0"/&gt;
+            &lt;/configurationProperties&gt;
+        &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
                 elif service_type == "FTP":
                     new_entries += f'''
-                        &lt;listEntry&gt;
-                            &lt;complexEntry&gt;
-                                &lt;configurationProperties&gt;
-                                    &lt;configurationProperty key="interface" type="com.scur.type.string" value="{parts[1]}:{parts[2]}"/&gt;
-                                    &lt;configurationProperty key="allowClientPassive" type="com.scur.type.boolean" value="true"/&gt;
-                                    &lt;configurationProperty key="dataPort" type="com.scur.type.number" value="2020"/&gt;
-                                    &lt;configurationProperty key="serverPortRange" type="com.scur.type.string" value="20001-25000"/&gt;
-                                    &lt;configurationProperty key="clientPortRange" type="com.scur.type.string" value="15000-20000"/&gt;
-                                    &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" value="true"/&gt;
-                                    &lt;configurationProperty key="serverPassiveConnectionAsClient" type="com.scur.type.boolean" value="false"/&gt;
-                                &lt;/configurationProperties&gt;
-                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+    &lt;listEntry&gt;
+        &lt;complexEntry&gt;
+            &lt;configurationProperties&gt;
+                &lt;configurationProperty key="interface" type="com.scur.type.string" value="{parts[1]}:{parts[2]}"/&gt;
+                &lt;configurationProperty key="allowClientPassive" type="com.scur.type.boolean" value="true"/&gt;
+                &lt;configurationProperty key="dataPort" type="com.scur.type.number" value="2020"/&gt;
+                &lt;configurationProperty key="serverPortRange" type="com.scur.type.string" value="20001-25000"/&gt;
+                &lt;configurationProperty key="clientPortRange" type="com.scur.type.string" value="15000-20000"/&gt;
+                &lt;configurationProperty key="serverPassiveConnection" type="com.scur.type.boolean" value="true"/&gt;
+                &lt;configurationProperty key="serverPassiveConnectionAsClient" type="com.scur.type.boolean" value="false"/&gt;
+            &lt;/configurationProperties&gt;
+        &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
                 elif service_type == "TCP":
                     new_entries += f'''
-                        &lt;listEntry&gt;
-                            &lt;complexEntry&gt;
-                                &lt;configurationProperties&gt;
-                                    &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
-                                    &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
-                                &lt;/configurationProperties&gt;
-                            &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
+    &lt;listEntry&gt;
+        &lt;complexEntry&gt;
+            &lt;configurationProperties&gt;
+                &lt;configurationProperty key="interface" type="com.scur.type.string" encrypted="false" value="{parts[1]}:{parts[2]}"/&gt;
+                &lt;configurationProperty key="proxy_protocol_header" type="com.scur.type.boolean" encrypted="false" value="false"/&gt;
+            &lt;/configurationProperties&gt;
+        &lt;/complexEntry&gt;&lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;&lt;/listEntry&gt;'''
 
         # Append XML
         # Insert new entries before </content>
