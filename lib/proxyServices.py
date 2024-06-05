@@ -190,7 +190,7 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
           &lt;configurationProperties&gt;
             &lt;configurationProperty key=&quot;interface&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;{parts[1]}:{parts[2]}&quot;/&gt;
             &lt;configurationProperty key=&quot;proxy_protocol_header&quot; type=&quot;com.scur.type.boolean&quot; encrypted=&quot;false&quot; value=&quot;false&quot;/&gt;
-            &lt;configurationProperty key=&quot;enabled_tcp_half_close&quot; type=&quot;com.scur.type.boolean&quot; encrypted=&quot;false&quot; value=&quot;false&quot;/&gt;
+            &lt;configurationProperty key=&quot;enable_tcp_half_close&quot; type=&quot;com.scur.type.boolean&quot; encrypted=&quot;false&quot; value=&quot;false&quot;/&gt;
           &lt;/configurationProperties&gt;
       &lt;/complexEntry&gt;
       &lt;description&gt;Imported Using Bluecoat to SkyHigh Web Gateway Migration Assistant Utility Version: {app_version}&lt;/description&gt;
