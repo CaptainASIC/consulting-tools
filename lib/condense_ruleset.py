@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
-import argparse
+import tkinter as tk
+from tkinter import simpledialog, filedialog, messagebox
 
 def condense_ruleset(input_file, output_file, new_ruleset_name, start_in, remove_source):
     tree = ET.parse(input_file)
@@ -19,7 +20,7 @@ def condense_ruleset(input_file, output_file, new_ruleset_name, start_in, remove
         "cycleEmbeddedObject": "false",
         "cloudSynced": "false"
     })
-    
+
     # Add empty elements to the new ruleset
     ET.SubElement(new_rule_group, "acElements")
     ET.SubElement(new_rule_group, "condition", {"always": "true"}).append(ET.Element("expressions"))
@@ -46,17 +47,31 @@ def condense_ruleset(input_file, output_file, new_ruleset_name, start_in, remove
     # Write the modified XML to the output file
     tree.write(output_file, encoding='utf-8', xml_declaration=True)
 
-def main():
-    parser = argparse.ArgumentParser(description="Condense Skyhigh Web Gateway rulesets into a single ruleset.")
-    parser.add_argument('-in', '--input', required=True, help='Input XML file')
-    parser.add_argument('-out', '--output', required=True, help='Output XML file')
-    args = parser.parse_args()
+def condense_ruleset_gui():
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
 
-    new_ruleset_name = input("Enter New Ruleset Name (default: Condensed Ruleset): ") or "Condensed Ruleset"
-    start_in = input("Enter Start In (default: Forwarding Layer): ") or "Forwarding Layer"
-    remove_source = input("Do you want to remove the source rule/ruleset? (yes/no, default: no): ").lower() == "yes"
+    input_file = filedialog.askopenfilename(title="Select Input XML File", filetypes=[("XML Files", "*.xml")])
+    if not input_file:
+        return
 
-    condense_ruleset(args.input, args.output, new_ruleset_name, start_in, remove_source)
+    output_file = filedialog.asksaveasfilename(title="Save Output XML File", defaultextension=".xml", filetypes=[("XML Files", "*.xml")])
+    if not output_file:
+        return
+
+    new_ruleset_name = simpledialog.askstring("Input", "Enter New Ruleset Name (default: Condensed Ruleset):", initialvalue="Condensed Ruleset")
+    if new_ruleset_name is None:
+        return
+
+    start_in = simpledialog.askstring("Input", "Enter Start In (default: Forwarding Layer):", initialvalue="Forwarding Layer")
+    if start_in is None:
+        return
+
+    remove_source = messagebox.askyesno("Remove Source", "Do you want to remove the source rule/ruleset?")
+
+    condense_ruleset(input_file, output_file, new_ruleset_name, start_in, remove_source)
+
+    messagebox.showinfo("Success", f"Ruleset has been condensed and saved to {output_file}")
 
 if __name__ == "__main__":
-    main()
+    condense_ruleset_gui()

@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.3.0"
+app_version = "2.3.1"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -26,6 +26,7 @@ from connectionTest import test_bc_connection, test_swg_connection
 from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, reboot_appliance, rollback
 from swgAPI import backup_config, force_api_logout, migrate_policy_lists
 from proxyServices import migrate_proxy_services
+from condense_ruleset import condense_ruleset_gui
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -143,7 +144,7 @@ def on_exit(entries, file_entry, root):
 def main():
     root = tk.Tk()
     root.title(f"Bluecoat to SkyHigh Migration Assistant Utility - Version {app_version}")
-    root.geometry("1100x1000")
+    root.geometry("1050x1000")
     root.resizable(False, False)
     root.configure(bg="gray15")
 
@@ -275,11 +276,12 @@ def main():
 
     maintenance_tasks = [
         ("Force API Logout", lambda: force_api_logout(entries[4].get(), entries[5].get())),
-        ("Show HA Stats", lambda: show_ha_stats(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
-        ("Config Rollback", lambda: rollback(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
         ("Restart MWG Service", lambda: restart_mwg_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Show HA Stats", lambda: show_ha_stats(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
         ("Restart MWG_UI Service", lambda: restart_mwg_ui_service(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
-        ("Reboot Appliance", lambda: reboot_appliance(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get()))
+        ("Config Rollback", lambda: rollback(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Reboot Appliance", lambda: reboot_appliance(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get())),
+        ("Condense Rulesets", lambda: condense_ruleset_gui())
     ]
 
     for i, (task_name, task_command) in enumerate(maintenance_tasks):
