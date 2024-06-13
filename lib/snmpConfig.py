@@ -52,12 +52,12 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                     if len(parts) >= 3:
                         listener_ports.append(parts[:3])
             
-            if line.startswith("SNMPv3 users:"):
+            if line.strip().startswith("SNMPv3 users:"):
                 capture_users = True
                 continue
             
             if capture_users:
-                if line.strip().startswith("Trap:"):
+                if re.match(r'\s*Trap:', line):
                     capture_users = False
                     continue
                 
@@ -77,7 +77,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                     current_user["priv_algorithm"] = priv_match.group(1)
                     current_user["priv_passphrase"] = "set"
                 
-                perm_match = re.match(r'\s*(Read Write permission|Read Only permission)', line)
+                perm_match = re.match(r'\s*(.*access\..*)', line)
                 if perm_match:
                     current_user["permission"] = perm_match.group(1)
 
@@ -149,7 +149,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             for version, status in snmp_versions:
                 file.write(f'{version},{status}\n')
             for user in snmpv3_users:
-                file.write(f'{user["username"]},{user.get("auth_algorithm", "")},{user.get("priv_algorithm", "")},{user["permission"]}\n')
+                file.write(f'{user["username"]},{user.get("auth_algorithm", "")},{user.get("priv_algorithm", "")},{user.get("permission", "")}\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
