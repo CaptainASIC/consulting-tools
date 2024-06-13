@@ -36,6 +36,8 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         capture = False
 
         for line in lines:
+            if line.startswith("SNMPv1"):
+                break
             if capture:
                 if line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
