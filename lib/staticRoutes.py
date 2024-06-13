@@ -15,6 +15,9 @@ from datetime import datetime
 from swgAPI import force_api_logout, get_appliance_uuid
 
 def fetch_static_routes(source_ip, username, password, filename, port=22):
+    # Ensure the "outputs" directory exists
+    outputs_dir = Path("outputs")
+    outputs_dir.mkdir(exist_ok=True)
     # Attempt to fetch static routes via SSH
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -31,6 +34,7 @@ def fetch_static_routes(source_ip, username, password, filename, port=22):
         # Check for errors and write output to file
         if errors:
             raise Exception(errors)
+        filename = outputs_dir / filename
         with open(filename, "w") as f:
             f.write(output)
 
@@ -70,8 +74,8 @@ def clean_and_save_routes(filename):
                 cleaned_data.append(f"{destination},{gateway}")
 
     # Assuming the new file name is the original with '_cleaned.csv'
-    cleaned_filename = filename.replace('.csv', '_cleaned.csv')
-
+    cleaned_filename = outputs_dir / filename.with_name(filename.stem + '_cleaned.csv')
+    
     # Write the cleaned data to a new file
     with open(cleaned_filename, "w") as file:
         for entry in cleaned_data:

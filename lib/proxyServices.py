@@ -87,6 +87,10 @@ def process_service_block(service_lines, converted_lines, service_type):
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:
+        # Ensure the "outputs" directory exists
+        outputs_dir = Path("outputs")
+        outputs_dir.mkdir(exist_ok=True)
+        
         # Step 1: Fetch proxy services from Bluecoat
         bluecoat_proxy_services = fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)
         if not bluecoat_proxy_services:
@@ -96,7 +100,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
 
         # Step 3: Save converted proxy services to a temporary file
-        temp_proxy_services_file = f"{source_ip}_proxy_services.csv"
+        temp_proxy_services_file = outputs_dir / f"{source_ip}_proxy_services.csv"
         with open(temp_proxy_services_file, "w") as file:
             file.write(skyhigh_proxy_services)
 
