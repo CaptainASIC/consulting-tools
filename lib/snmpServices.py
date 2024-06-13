@@ -86,3 +86,8 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
         temp_snmp_config_file = f"{source_ip}_snmp_config.csv"
         with open(temp_snmp_config_file, "w") as file:
             file.write(skyhigh_snmp_config)
+            
+        messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
+    
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to migrate SNMP Config: {e}")
