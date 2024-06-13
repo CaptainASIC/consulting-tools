@@ -30,30 +30,35 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         if error_output:
             raise Exception(error_output)
         
-        # Process the command output to capture the "listener ports"
+        # Process the command output to capture the "listener ports" and SNMP versions
         lines = command_output.splitlines()
         listener_ports = []
-        capture = False
+        snmp_versions = []
+        capture_listeners = False
 
         for line in lines:
-            if line.startswith("SNMPv1"):
-                break
-            if capture:
+            if line.startswith("Destination IP"):
+                capture_listeners = True
+                continue  # Skip the "Destination IP" label line
+            if capture_listeners:
+                if line.startswith("SNMPv1"):
+                    snmp_versions = re.findall(r'(SNMPv\d+) is (\w+)', line)
+                    break
                 if line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
                     if len(parts) >= 3:
                         listener_ports.append(parts[:3])
-            if line.startswith("Destination IP"):
-                capture = True
 
         if not listener_ports:
             raise Exception("No listener ports found in the SNMP configuration.")
+        if not snmp_versions:
+            raise Exception("No SNMP versions found in the SNMP configuration.")
         
-        return listener_ports
+        return listener_ports, snmp_versions
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
-        return None
+        return None, None
     finally:
         # Close the connection
         client.close()
@@ -92,7 +97,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 def migrate_snmp_config(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:
         # Step 1: Fetch snmp config from Bluecoat
-        bluecoat_snmp_config = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
+        bluecoat_snmp_config, snmp_versions = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
         if not bluecoat_snmp_config:
             return
         
@@ -102,8 +107,10 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
         # Step 3: Save converted snmp config to a temporary file
         temp_snmp_config_file = f"{source_ip}_snmp_config.csv"
         with open(temp_snmp_config_file, "w") as file:
-            for listener in skyhigh_snmp_config:
+            for listener in bluecoat_snmp_config:
                 file.write(','.join(listener) + '\n')
+            for version, status in snmp_versions:
+                file.write(f'{version},{status}\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
