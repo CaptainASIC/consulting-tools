@@ -30,12 +30,15 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         if error_output:
             raise Exception(error_output)
         
-        # Process the command output to capture the "listener ports" and SNMP versions
+        # Process the command output to capture the "listener ports", SNMP versions, and SNMPv3 users
         lines = command_output.splitlines()
         listener_ports = []
         snmp_versions = []
+        snmpv3_users = []
         capture_listeners = False
-
+        capture_users = False
+        current_user = {}
+        
         for line in lines:
             if line.startswith("Destination IP"):
                 capture_listeners = True
@@ -43,22 +46,56 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
             if capture_listeners:
                 if line.startswith("SNMPv"):
                     snmp_versions = re.findall(r'SNMP(v[^\s]+) is (\w+)', line)
-                    break
-                if line.strip():  # Ensure the line is not empty
+                    capture_listeners = False
+                elif line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
                     if len(parts) >= 3:
                         listener_ports.append(parts[:3])
+            
+            if line.startswith("SNMPv3 users:"):
+                capture_users = True
+                continue
+            
+            if capture_users:
+                if line.startswith("Trap:"):
+                    capture_users = False
+                    continue
+                
+                user_match = re.match(r'\s*(\S+):', line)
+                if user_match:
+                    if current_user:
+                        snmpv3_users.append(current_user)
+                    current_user = {"username": user_match.group(1)}
+                
+                auth_match = re.match(r'\s*Authentication:\s*(\S+),(\S+)', line)
+                if auth_match:
+                    current_user["auth_algorithm"] = auth_match.group(1)
+                    current_user["auth_passphrase"] = auth_match.group(2)
+                
+                priv_match = re.match(r'\s*Privacy:\s*(\S+),(\S+)', line)
+                if priv_match:
+                    current_user["priv_algorithm"] = priv_match.group(1)
+                    current_user["priv_passphrase"] = priv_match.group(2)
+                
+                perm_match = re.match(r'\s*(Read Write permission|Read Only permission)', line)
+                if perm_match:
+                    current_user["permission"] = perm_match.group(1)
+
+        if current_user:
+            snmpv3_users.append(current_user)
 
         if not listener_ports:
             raise Exception("No listener ports found in the SNMP configuration.")
         if not snmp_versions:
             raise Exception("No SNMP versions found in the SNMP configuration.")
+        if not snmpv3_users:
+            raise Exception("No SNMPv3 users found in the SNMP configuration.")
         
-        return listener_ports, snmp_versions
+        return listener_ports, snmp_versions, snmpv3_users
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
-        return None, None
+        return None, None, None
     finally:
         # Close the connection
         client.close()
@@ -97,7 +134,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 def migrate_snmp_config(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:
         # Step 1: Fetch snmp config from Bluecoat
-        bluecoat_snmp_config, snmp_versions = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
+        bluecoat_snmp_config, snmp_versions, snmpv3_users = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
         if not bluecoat_snmp_config:
             return
         
@@ -111,6 +148,8 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
                 file.write(','.join(listener) + '\n')
             for version, status in snmp_versions:
                 file.write(f'{version},{status}\n')
+            for user in snmpv3_users:
+                file.write(f'{user["username"]},{user["auth_algorithm"]},{user["priv_algorithm"]},{user["permission"]}\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
