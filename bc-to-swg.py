@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.3.2"
+app_version = "2.3.3"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -27,7 +27,7 @@ from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, r
 from swgAPI import backup_config, force_api_logout, migrate_policy_lists
 from proxyServices import migrate_proxy_services
 from condense_ruleset import condense_ruleset_gui
-from snmpServices import migrate_snmp_config
+from snmpConfig import migrate_snmp_config
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -61,7 +61,7 @@ def load_config(entries, file_entry):
         entries[11].delete(0, tk.END)
         entries[11].insert(0, config['DESTINATION'].get('Interface', 'eth0'))
         entries[12].delete(0, tk.END)
-        entries[12].insert(0, config['DESTINATION'].get('Local Static Routes File', 'staticroutes.csv'))
+        entries[12].insert(0, config['DESTINATION'].get('Local Static Routes File', 'outputs/staticroutes.csv'))
 
     if 'FILE' in config:
         file_entry.delete(0, tk.END)
@@ -73,7 +73,7 @@ def migrate_action(src_type, entries, file_entry):
         post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
     else:
         # Fetch live data, clean it, and post
-        source_file = f"{entries[0].get()}.csv"
+        source_file = f"outputs/{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[2].get(), entries[3].get(), source_file, entries[1].get())
         cleaned_file = clean_and_save_routes(source_file)
         post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
@@ -223,7 +223,7 @@ def main():
     browse_button = tk.Button(staticroutes_frame, text="Browse", command=lambda: choose_file(file_entry), bg="gray60")
     browse_button.grid(row=2, column=2, padx=10)
     entries.append(file_entry)
-    entries[12].insert(0, "staticroutes.csv")
+    entries[12].insert(0, "outputs/staticroutes.csv")
 
     # Append or Overwrite radio buttons
     append_radio = tk.Radiobutton(staticroutes_frame, text="Append Routes", variable=append_overwrite_type, value="append", bg="gray15", fg="goldenrod", selectcolor="gray15")
