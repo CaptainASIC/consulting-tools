@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.3.1"
+app_version = "2.3.2"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -27,6 +27,7 @@ from swgSSH import show_ha_stats, restart_mwg_service, restart_mwg_ui_service, r
 from swgAPI import backup_config, force_api_logout, migrate_policy_lists
 from proxyServices import migrate_proxy_services
 from condense_ruleset import condense_ruleset_gui
+from snmpServices import migrate_snmp_services
 
 def load_config(entries, file_entry):
     config = configparser.ConfigParser()
@@ -264,11 +265,15 @@ def main():
     
     # Backup Current Config button
     btn_backup_config = tk.Button(proxy_frame, text="Backup Current Config", command=lambda: backup_config(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()), bg="gray60")
-    btn_backup_config.grid(row=0, column=0, padx=10, sticky="w")
+    btn_backup_config.grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
     # Migrate Proxy Services button
     btn_migrate_proxy_services = tk.Button(proxy_frame, text="Migrate Proxy Services", command=lambda: migrate_proxy_services(entries[0].get(), entries[1].get(), entries[2].get(), entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get(), app_version), bg="gray60")
-    btn_migrate_proxy_services.grid(row=1, column=0, pady=20)
+    btn_migrate_proxy_services.grid(row=1, column=0, padx=10, pady=5)
+
+    # Migrate SNMP Services button
+    btn_migrate_snmp_services = tk.Button(proxy_frame, text="Migrate SNMP Config", command=lambda: migrate_snmp_services(entries[0].get(), entries[1].get(), entries[2].get(), entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get(), app_version), bg="gray60")
+    btn_migrate_snmp_services.grid(row=2, column=0, padx=10, pady=5)
 
     # SWG Maintenance Tasks section
     maintenance_frame = tk.LabelFrame(field_frame, text="SWG Maintenance Tasks", padx=10, pady=10, bd=2, relief="groove", bg="gray15", fg="goldenrod")
