@@ -41,8 +41,8 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 capture_listeners = True
                 continue  # Skip the "Destination IP" label line
             if capture_listeners:
-                if line.startswith("SNMPv1"):
-                    snmp_versions = re.findall(r'(SNMPv\d+) is (\w+)', line)
+                if line.startswith("SNMPv"):
+                    snmp_versions = re.findall(r'SNMP(v[^\s]+) is (\w+)', line)
                     break
                 if line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
