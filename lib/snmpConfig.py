@@ -38,8 +38,12 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         # Close the connection
         client.close()
 
-def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config):
+def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, port, dest_user, dest_pass, uuid):
     # Convert Bluecoat snmp config to SkyHigh format
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
+    if not uuid:
+        return  # Stop if UUID could not be retrieved
+    
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
     route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.snmp.configuration"
@@ -73,7 +77,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             return
         
         # Step 2: Convert fetched snmp config to SkyHigh format
-        skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config)
+        skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, port, dest_user, dest_pass, uuid)
 
         # Step 3: Save converted snmp config to a temporary file
         temp_snmp_config_file = f"{source_ip}_snmp_config.csv"
