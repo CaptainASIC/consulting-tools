@@ -45,7 +45,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 continue  # Skip the "Destination IP" label line
             if capture_listeners:
                 if line.startswith("SNMPv"):
-                    snmp_versions = re.findall(r'(v[^\s]+) is (\w+)', line)
+                    snmp_versions = re.findall(r'SNMP(v[^\s]+) is (\w+)', line)
                     capture_listeners = False
                 elif line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
@@ -70,12 +70,10 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 auth_match = re.match(r'\s*Authentication:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
                 if auth_match:
                     current_user["auth_algorithm"] = auth_match.group(1)
-                    current_user["auth_passphrase"] = "set"
                 
                 priv_match = re.match(r'\s*Privacy:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
                 if priv_match:
                     current_user["priv_algorithm"] = priv_match.group(1)
-                    current_user["priv_passphrase"] = "set"
                 
                 perm_match = re.match(r'\s*(.*access\..*)', line)
                 if perm_match:
@@ -147,7 +145,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             for listener in bluecoat_snmp_config:
                 file.write(','.join(listener) + '\n')
             for version, status in snmp_versions:
-                file.write(f'{version},{status}\n')
+                file.write(f'SNMP{version},{status}\n')
             for user in snmpv3_users:
                 file.write(f'{user["username"]},{user.get("auth_algorithm", "")},{user.get("priv_algorithm", "")},{user.get("permission", "")}\n')
             
