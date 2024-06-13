@@ -40,6 +40,28 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
 
 def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config):
     # Convert Bluecoat snmp config to SkyHigh format
+    auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
+    headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
+    route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.snmp.configuration"
+   
+    if not route_url:
+        messagebox.showerror("Error", "Unknown configuration.")
+        return
+
+    # Fetch existing configuration
+    try:
+        response = requests.get(route_url, headers=headers, verify=False)
+        existing_xml = response.text
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to fetch existing SNMP Configuration: {e}")
+        return
+    
+    # Save the modified XML locally for testing
+    with open(f'{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
+        new_xml_file.write(existing_xml)
+
+    # Logout
+    force_api_logout(dest_ip, port)        
 
     return bluecoat_snmp_config
 
