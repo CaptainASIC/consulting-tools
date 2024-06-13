@@ -96,7 +96,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
 
         # Step 3: Save converted proxy services to a temporary file
-        temp_proxy_services_file = f"outputs/{source_ip}_proxy_services.csv"
+        temp_proxy_services_file = f"{source_ip}_proxy_services.csv"
         with open(temp_proxy_services_file, "w") as file:
             file.write(skyhigh_proxy_services)
 
@@ -202,7 +202,7 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
         modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
 
         # Save the modified XML locally for testing
-        with open(f'outputs/{service_type.lower()}_services.xml', 'w') as new_xml_file:
+        with open(f'{service_type.lower()}_services.xml', 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
 
         # Step 3: Upload the modified XML

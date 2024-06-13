@@ -54,7 +54,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
         skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config)
 
         # Step 3: Save converted snmp config to a temporary file
-        temp_snmp_config_file = f"outputs/{source_ip}_snmp_config.csv"
+        temp_snmp_config_file = f"{source_ip}_snmp_config.csv"
         with open(temp_snmp_config_file, "w") as file:
             file.write(skyhigh_snmp_config)
             
