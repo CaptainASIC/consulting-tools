@@ -121,7 +121,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         return
     
     # Save the modified XML locally for testing
-    with open(f'{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
+    with open(f'outputs/{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
         new_xml_file.write(existing_xml)
 
     # Logout
@@ -139,11 +139,9 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
         # Step 2: Convert fetched snmp config to SkyHigh format
         skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass)
 
-        # Ensure the "outputs" directory exists
+        # Step 3: Save converted snmp config to a temporary file
         outputs_dir = Path("outputs")
         outputs_dir.mkdir(exist_ok=True)
-        
-        # Step 3: Save converted snmp config to a temporary file
         temp_snmp_config_file = outputs_dir / f"{source_ip}_snmp_config.csv"
         with open(temp_snmp_config_file, "w") as file:
             for listener in bluecoat_snmp_config:
