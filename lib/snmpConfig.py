@@ -44,7 +44,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 capture_listeners = True
                 continue  # Skip the "Destination IP" label line
             if capture_listeners:
-                if line.startswith("SNMPv1"):
+                if line.startswith("SNMPv"):
                     snmp_versions = re.findall(r'(v[^\s]+) is (\w+)', line)
                     capture_listeners = False
                 elif line.strip():  # Ensure the line is not empty
@@ -67,15 +67,15 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                         snmpv3_users.append(current_user)
                     current_user = {"username": user_match.group(1)}
                 
-                auth_match = re.match(r'\s*Authentication:\s*(\S+),(\S+)', line)
+                auth_match = re.match(r'\s*Authentication:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
                 if auth_match:
                     current_user["auth_algorithm"] = auth_match.group(1)
-                    current_user["auth_passphrase"] = auth_match.group(2)
+                    current_user["auth_passphrase"] = "set"
                 
-                priv_match = re.match(r'\s*Privacy:\s*(\S+),(\S+)', line)
+                priv_match = re.match(r'\s*Privacy:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
                 if priv_match:
                     current_user["priv_algorithm"] = priv_match.group(1)
-                    current_user["priv_passphrase"] = priv_match.group(2)
+                    current_user["priv_passphrase"] = "set"
                 
                 perm_match = re.match(r'\s*(Read Write permission|Read Only permission)', line)
                 if perm_match:
@@ -149,7 +149,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             for version, status in snmp_versions:
                 file.write(f'{version},{status}\n')
             for user in snmpv3_users:
-                file.write(f'{user["username"]},{user["auth_algorithm"]},{user["priv_algorithm"]},{user["permission"]}\n')
+                file.write(f'{user["username"]},{user.get("auth_algorithm", "")},{user.get("priv_algorithm", "")},{user["permission"]}\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
