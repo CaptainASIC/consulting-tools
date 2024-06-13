@@ -29,8 +29,26 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         command_output = stdout.read().decode()
         if error_output:
             raise Exception(error_output)
-        return command_output
-    
+        
+        # Process the command output to capture the "listener ports"
+        lines = command_output.splitlines()
+        listener_ports = []
+        capture = False
+
+        for line in lines:
+            if capture:
+                if line.strip():  # Ensure the line is not empty
+                    parts = re.split(r'\s+', line.strip())
+                    if len(parts) >= 3:
+                        listener_ports.append(parts[:3])
+            if line.startswith("Destination IP"):
+                capture = True
+
+        if not listener_ports:
+            raise Exception("No listener ports found in the SNMP configuration.")
+        
+        return listener_ports
+
     except Exception as e:
         messagebox.showerror("Error", str(e))
         return None
@@ -38,15 +56,15 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         # Close the connection
         client.close()
 
-def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, port, dest_user, dest_pass, uuid):
+def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass):
     # Convert Bluecoat snmp config to SkyHigh format
-    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, port)
+    uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, dest_port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
     
     auth_header = "Basic " + b64encode(f"{dest_user}:{dest_pass}".encode()).decode("utf-8")
     headers = {"Authorization": auth_header, "Content-Type": "application/xml"}
-    route_url = f"https://{dest_ip}:{port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.snmp.configuration"
+    route_url = f"https://{dest_ip}:{dest_port}/Konfigurator/REST/appliances/{uuid}/configuration/com.scur.engine.appliance.snmp.configuration"
    
     if not route_url:
         messagebox.showerror("Error", "Unknown configuration.")
@@ -65,7 +83,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, port, d
         new_xml_file.write(existing_xml)
 
     # Logout
-    force_api_logout(dest_ip, port)        
+    force_api_logout(dest_ip, dest_port)        
 
     return bluecoat_snmp_config
 
@@ -77,12 +95,13 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             return
         
         # Step 2: Convert fetched snmp config to SkyHigh format
-        skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, port, dest_user, dest_pass, uuid)
+        skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass)
 
         # Step 3: Save converted snmp config to a temporary file
         temp_snmp_config_file = f"{source_ip}_snmp_config.csv"
         with open(temp_snmp_config_file, "w") as file:
-            file.write(skyhigh_snmp_config)
+            for listener in skyhigh_snmp_config:
+                file.write(','.join(listener) + '\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
