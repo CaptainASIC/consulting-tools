@@ -38,7 +38,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         capture_listeners = False
         capture_users = False
         current_user = []
-        
+
         for line in lines:
             if line.startswith("Destination IP"):
                 capture_listeners = True
@@ -63,22 +63,19 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 
                 if line.strip() and line.startswith(' '):
                     current_user.append(line.strip())
-                elif current_user:
                     if len(current_user) == 4:
-                        username = current_user[0].split(':')[0]
-                        auth_algorithm = current_user[1].split(': ')[1].split(',')[0]
-                        priv_algorithm = current_user[2].split(': ')[1].split(',')[0]
-                        permission = current_user[3]
+                        username = current_user[0].split(':')[0].strip()
+                        auth_algorithm = current_user[1].split(': ')[1].split(',')[0].strip()
+                        priv_algorithm = current_user[2].split(': ')[1].split(',')[0].strip()
+                        permission = current_user[3].strip()
                         snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
-                    current_user = []
-                    if line.strip():
-                        current_user.append(line.strip())
+                        current_user = []
 
         if current_user and len(current_user) == 4:
-            username = current_user[0].split(':')[0]
-            auth_algorithm = current_user[1].split(': ')[1].split(',')[0]
-            priv_algorithm = current_user[2].split(': ')[1].split(',')[0]
-            permission = current_user[3]
+            username = current_user[0].split(':')[0].strip()
+            auth_algorithm = current_user[1].split(': ')[1].split(',')[0].strip()
+            priv_algorithm = current_user[2].split(': ')[1].split(',')[0].strip()
+            permission = current_user[3].strip()
             snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
 
         if not listener_ports:
@@ -120,7 +117,9 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         return
     
     # Save the modified XML locally for testing
-    with open(f'outputs/{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
+    outputs_dir = Path("outputs")
+    outputs_dir.mkdir(exist_ok=True)
+    with open(outputs_dir / f'{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
         new_xml_file.write(existing_xml)
 
     # Logout
