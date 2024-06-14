@@ -30,13 +30,15 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         if error_output:
             raise Exception(error_output)
         
-        # Process the command output to capture the "listener ports", SNMP versions, and SNMPv3 users
+        # Process the command output to capture the "listener ports", SNMP versions, SNMPv3 users, and traps
         lines = command_output.splitlines()
         listener_ports = []
         snmp_versions = []
         snmpv3_users = []
+        traps = []
         capture_listeners = False
         capture_users = False
+        capture_traps = False
         current_user = []
 
         for line in lines:
@@ -59,6 +61,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
             if capture_users:
                 if re.match(r'\s*Trap:', line):
                     capture_users = False
+                    capture_traps = True
                     continue
                 
                 if line.strip() and line.startswith(' '):
@@ -70,6 +73,15 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                         permission = current_user[3].strip()
                         snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
                         current_user = []
+
+            if capture_traps:
+                trap_match = re.match(r'\s*Trap: (\S+) (\d+\.\d+\.\d+\.\d+), port (\d+)', line)
+                if trap_match:
+                    protocol = trap_match.group(1)
+                    ip_address = trap_match.group(2)
+                    port_number = trap_match.group(3)
+                    trap_number = len(traps) + 1
+                    traps.append([f'trap{trap_number}', protocol, ip_address, port_number])
 
         if current_user and len(current_user) == 4:
             username = current_user[0].split(':')[0].strip()
@@ -84,12 +96,14 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
             raise Exception("No SNMP versions found in the SNMP configuration.")
         if not snmpv3_users:
             raise Exception("No SNMPv3 users found in the SNMP configuration.")
+        if not traps:
+            raise Exception("No traps found in the SNMP configuration.")
         
-        return listener_ports, snmp_versions, snmpv3_users
+        return listener_ports, snmp_versions, snmpv3_users, traps
 
     except Exception as e:
         messagebox.showerror("Error", str(e))
-        return None, None, None
+        return None, None, None, None
     finally:
         # Close the connection
         client.close()
@@ -130,7 +144,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 def migrate_snmp_config(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:
         # Step 1: Fetch snmp config from Bluecoat
-        bluecoat_snmp_config, snmp_versions, snmpv3_users = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
+        bluecoat_snmp_config, snmp_versions, snmpv3_users, traps = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
         if not bluecoat_snmp_config:
             return
         
@@ -148,6 +162,8 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
                 file.write(f'SNMP{version},{status}\n')
             for user in snmpv3_users:
                 file.write(','.join(user) + '\n')
+            for trap in traps:
+                file.write(','.join(trap) + '\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
