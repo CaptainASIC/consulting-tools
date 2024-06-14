@@ -37,7 +37,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         snmpv3_users = []
         capture_listeners = False
         capture_users = False
-        current_user = {}
+        current_user = []
         
         for line in lines:
             if line.startswith("Destination IP"):
@@ -61,26 +61,25 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                     capture_users = False
                     continue
                 
-                user_match = re.match(r'\s*(\S+):', line)
-                if user_match:
-                    if current_user:
-                        snmpv3_users.append(current_user)
-                    current_user = {"username": user_match.group(1)}
-                
-                auth_match = re.match(r'\s*Authentication:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
-                if auth_match:
-                    current_user["auth_algorithm"] = auth_match.group(1)
-                
-                priv_match = re.match(r'\s*Privacy:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
-                if priv_match:
-                    current_user["priv_algorithm"] = priv_match.group(1)
-                
-                perm_match = re.match(r'\s*(.*access\..*)', line)
-                if perm_match:
-                    current_user["permission"] = perm_match.group(1)
+                if line.strip() and line.startswith(' '):
+                    current_user.append(line.strip())
+                elif current_user:
+                    if len(current_user) == 4:
+                        username = current_user[0].split(':')[0]
+                        auth_algorithm = current_user[1].split(': ')[1].split(',')[0]
+                        priv_algorithm = current_user[2].split(': ')[1].split(',')[0]
+                        permission = current_user[3]
+                        snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
+                    current_user = []
+                    if line.strip():
+                        current_user.append(line.strip())
 
-        if current_user:
-            snmpv3_users.append(current_user)
+        if current_user and len(current_user) == 4:
+            username = current_user[0].split(':')[0]
+            auth_algorithm = current_user[1].split(': ')[1].split(',')[0]
+            priv_algorithm = current_user[2].split(': ')[1].split(',')[0]
+            permission = current_user[3]
+            snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
 
         if not listener_ports:
             raise Exception("No listener ports found in the SNMP configuration.")
@@ -149,7 +148,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             for version, status in snmp_versions:
                 file.write(f'SNMP{version},{status}\n')
             for user in snmpv3_users:
-                file.write(f'{user["username"]},{user.get("auth_algorithm", "")},{user.get("priv_algorithm", "")},{user.get("permission", "")}\n')
+                file.write(','.join(user) + '\n')
             
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
