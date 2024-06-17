@@ -129,15 +129,54 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch existing SNMP Configuration: {e}")
         return
-    
+
+    # Modify the XML based on user input
+    root = ET.fromstring(existing_xml)
+
+    def prompt_for_protocol(protocol):
+        return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes', options=('Enabled', 'Disabled'))
+
+    snmp_v1_status = prompt_for_protocol("SNMP v1")
+    snmp_v2c_status = prompt_for_protocol("SNMP v2c")
+    snmp_v3_status = prompt_for_protocol("SNMP v3")
+
+    protocol_map = {
+        "snmp.agent.allowprotocolv1": snmp_v1_status,
+        "snmp.agent.allowprotocolv2c": snmp_v2c_status,
+        "snmp.agent.allowprotocolv3": snmp_v3_status
+    }
+
+    for key, status in protocol_map.items():
+        value = "true" if status == 'yes' else "false"
+        prop = root.find(f".//configurationProperty[@key='{key}']")
+        if prop is not None:
+            prop.set("value", value)
+        else:
+            new_prop = ET.SubElement(root, "configurationProperty", {
+                "key": key,
+                "type": "com.scur.type.boolean",
+                "encrypted": "false",
+                "value": value
+            })
+
     # Save the modified XML locally for testing
     outputs_dir = Path("outputs")
     outputs_dir.mkdir(exist_ok=True)
-    with open(outputs_dir / f'{dest_ip}_snmp_config.xml', 'w') as new_xml_file:
-        new_xml_file.write(existing_xml)
+    modified_xml_file = outputs_dir / f'{dest_ip}_modified_snmp_config.xml'
+    with open(modified_xml_file, 'w') as file:
+        file.write(ET.tostring(root, encoding='unicode'))
+
+    # Upload the modified XML
+    try:
+        response = requests.put(route_url, headers=headers, data=ET.tostring(root), verify=False)
+        if response.status_code != 200:
+            raise Exception(f"Failed to upload modified SNMP configuration. Status code: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Error", f"Failed to upload modified SNMP Configuration: {e}")
+        return
 
     # Logout
-    force_api_logout(dest_ip, dest_port)        
+    force_api_logout(dest_ip, dest_port)
 
     return bluecoat_snmp_config
 
