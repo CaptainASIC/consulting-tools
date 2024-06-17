@@ -175,9 +175,6 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         messagebox.showerror("Error", f"Failed to upload modified SNMP Configuration: {e}")
         return
 
-    # Logout
-    force_api_logout(dest_ip, dest_port)
-
     return bluecoat_snmp_config
 
 def migrate_snmp_config(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
@@ -203,7 +200,13 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
                 file.write(','.join(user) + '\n')
             for trap in traps:
                 file.write(','.join(trap) + '\n')
-            
+    
+    # Commit changes
+    curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{dest_port}/Konfigurator/REST/commit'
+    subprocess.run(curl_command, shell=True)
+    # Logout
+    force_api_logout(dest_ip, dest_port)
+
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
     except Exception as e:
