@@ -109,7 +109,8 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         client.close()
 
 def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass):
-    # Convert Bluecoat snmp config to SkyHigh format
+    listener_ports, snmp_versions, snmpv3_users, traps = bluecoat_snmp_config
+
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, dest_port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
@@ -124,15 +125,58 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 
     # Fetch existing configuration
     try:
-        response = requests.get(route_url, headers=headers, verify=False)
-        existing_xml = response.text
-    except requests.exceptions.RequestException as e:
+        response = subprocess.run(
+            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'GET', f'{route_url}', '-H', 'Content-Type: application/xml'],
+            capture_output=True,
+            text=True
+        )
+        existing_xml = response.stdout
+        if response.returncode != 0:
+            raise Exception(f"Failed to fetch existing SNMP Configuration. {response.stderr}")
+    except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch existing SNMP Configuration: {e}")
         return
 
-    # Modify the XML based on user input
+    # Modify the XML with listener addresses
     root = ET.fromstring(existing_xml)
+    listener_prop = root.find(".//configurationProperty[@key='snmp.agent.listeneraddresses']")
+    if listener_prop is not None:
+        listener_prop.clear()
+    else:
+        listener_prop = ET.SubElement(root, "configurationProperty", {
+            "key": "snmp.agent.listeneraddresses",
+            "type": "com.scur.type.inlineList",
+            "listType": "com.scur.type.complex.snmpports",
+            "encrypted": "false"
+        })
 
+    listener_entries = ''
+    for listener in listener_ports:
+        if listener[0] == "<All>":
+            listener[0] = "0.0.0.0"
+        address = f"{listener[0]}:{listener[1]}"
+        listener_entries += f'''
+    &lt;listEntry&gt;
+      &lt;complexEntry&gt;
+        &lt;acElements/&gt;
+        &lt;configurationProperties&gt;
+          &lt;configurationProperty key=&quot;prot&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;udp&quot;/&gt;
+          &lt;configurationProperty key=&quot;ipaddress&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;{address}&quot;/&gt;
+        &lt;/configurationProperties&gt;
+      &lt;/complexEntry&gt;
+      &lt;description&gt;Migrated using tool&lt;/description&gt;
+    &lt;/listEntry&gt;'''
+
+    listener_prop.set("value", f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;10.2.7-40006&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&#xa;  &lt;description&gt;&lt;/description&gt;&#xa;  &lt;content&gt;{listener_entries}&#xa;  &lt;/content&gt;&#xa;&lt;/list&gt;')
+
+    # Save the modified XML locally for testing
+    outputs_dir = Path("outputs")
+    outputs_dir.mkdir(exist_ok=True)
+    modified_xml_file = outputs_dir / f'{dest_ip}_modified_snmp_config.xml'
+    with open(modified_xml_file, 'w') as file:
+        file.write(ET.tostring(root, encoding='unicode'))
+
+    # Protocol prompts
     def prompt_for_protocol(protocol):
         return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes')
 
@@ -159,14 +203,11 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
                 "value": value
             })
 
-    # Save the modified XML locally for testing
-    outputs_dir = Path("outputs")
-    outputs_dir.mkdir(exist_ok=True)
-    modified_xml_file = outputs_dir / f'{dest_ip}_modified_snmp_config.xml'
+    # Save the modified XML again after protocol changes
     with open(modified_xml_file, 'w') as file:
         file.write(ET.tostring(root, encoding='unicode'))
 
-    # Upload the modified XML
+    # Upload the final modified XML
     try:
         response = subprocess.run(
             ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{modified_xml_file}', f'{route_url}', '-H', 'Content-Type: application/xml'],
@@ -175,9 +216,9 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         )
         curl_output = response.stdout
         if response.returncode != 0:
-            raise Exception(f"Failed to upload modified SNMP Configuration. {curl_output}")
+            raise Exception(f"Failed to upload final SNMP Configuration. {curl_output}")
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to upload modified SNMP Configuration: {e}")
+        messagebox.showerror("Error", f"Failed to upload final SNMP Configuration: {e}")
         return
 
     return bluecoat_snmp_config
@@ -207,7 +248,7 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
                 file.write(','.join(trap) + '\n')
     
         # Commit changes
-        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{dest_port}/Konfigurator/REST/commit'
         subprocess.run(curl_command, shell=True)
         # Logout
         force_api_logout(dest_ip, dest_port)
