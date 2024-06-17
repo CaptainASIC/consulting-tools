@@ -134,7 +134,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
     root = ET.fromstring(existing_xml)
 
     def prompt_for_protocol(protocol):
-        return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes', options=('Enabled', 'Disabled'))
+        return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes')
 
     snmp_v1_status = prompt_for_protocol("SNMP v1")
     snmp_v2c_status = prompt_for_protocol("SNMP v2c")
@@ -168,10 +168,15 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 
     # Upload the modified XML
     try:
-        response = requests.put(route_url, headers=headers, data=ET.tostring(root), verify=False)
-        if response.status_code != 200:
-            raise Exception(f"Failed to upload modified SNMP configuration. Status code: {response.status_code}")
-    except requests.exceptions.RequestException as e:
+        response = subprocess.run(
+            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{modified_xml_file}', f'{route_url}', '-H', 'Content-Type: application/xml'],
+            capture_output=True,
+            text=True
+        )
+        curl_output = response.stdout
+        if response.returncode != 0:
+            raise Exception(f"Failed to upload modified SNMP Configuration. {curl_output}")
+    except Exception as e:
         messagebox.showerror("Error", f"Failed to upload modified SNMP Configuration: {e}")
         return
 
@@ -201,11 +206,11 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
             for trap in traps:
                 file.write(','.join(trap) + '\n')
     
-    # Commit changes
-    curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{dest_port}/Konfigurator/REST/commit'
-    subprocess.run(curl_command, shell=True)
-    # Logout
-    force_api_logout(dest_ip, dest_port)
+        # Commit changes
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
+        subprocess.run(curl_command, shell=True)
+        # Logout
+        force_api_logout(dest_ip, dest_port)
 
         messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
     
