@@ -39,9 +39,8 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         capture_listeners = False
         capture_users = False
         capture_traps = False
-        current_user = {}
-        trap_count = 0
-        
+        current_user = []
+
         for line in lines:
             if line.startswith("Destination IP"):
                 capture_listeners = True
@@ -53,7 +52,6 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                 elif line.strip():  # Ensure the line is not empty
                     parts = re.split(r'\s+', line.strip())
                     if len(parts) >= 3:
-                        parts[0] = "0.0.0.0" if parts[0] == "<All>" else parts[0]
                         listener_ports.append(parts[:3])
             
             if line.strip().startswith("SNMPv3 users:"):
@@ -66,32 +64,31 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
                     capture_traps = True
                     continue
                 
-                user_match = re.match(r'\s*(\S+):', line)
-                if user_match:
-                    if current_user:
-                        snmpv3_users.append(current_user)
-                    current_user = {"username": user_match.group(1)}
-                
-                auth_match = re.match(r'\s*Authentication:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
-                if auth_match:
-                    current_user["auth_algorithm"] = auth_match.group(1)
-                
-                priv_match = re.match(r'\s*Privacy:\s*(\S+),\s*passphrase\s*is\s*set\.', line)
-                if priv_match:
-                    current_user["priv_algorithm"] = priv_match.group(1)
-                
-                perm_match = re.match(r'\s*(.*access\..*)', line)
-                if perm_match:
-                    current_user["permission"] = perm_match.group(1)
+                if line.strip() and line.startswith(' '):
+                    current_user.append(line.strip())
+                    if len(current_user) == 4:
+                        username = current_user[0].split(':')[0].strip()
+                        auth_algorithm = current_user[1].split(': ')[1].split(',')[0].strip()
+                        priv_algorithm = current_user[2].split(': ')[1].split(',')[0].strip()
+                        permission = current_user[3].strip()
+                        snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
+                        current_user = []
 
-        if current_user:
-            snmpv3_users.append(current_user)
+            if capture_traps:
+                trap_match = re.match(r'\s*Trap: (\S+) (\d+\.\d+\.\d+\.\d+), port (\d+)', line)
+                if trap_match:
+                    protocol = trap_match.group(1)
+                    ip_address = trap_match.group(2)
+                    port_number = trap_match.group(3)
+                    trap_number = len(traps) + 1
+                    traps.append([f'trap{trap_number}', protocol, ip_address, port_number])
 
-        if capture_traps:
-            trap_match = re.match(r'\s*Trap:\s*(\w+)\s+(\d+\.\d+\.\d+\.\d+),\s*port\s*(\d+)', line)
-            if trap_match:
-                trap_count += 1
-                traps.append((trap_count, trap_match.group(1), trap_match.group(2), trap_match.group(3)))
+        if current_user and len(current_user) == 4:
+            username = current_user[0].split(':')[0].strip()
+            auth_algorithm = current_user[1].split(': ')[1].split(',')[0].strip()
+            priv_algorithm = current_user[2].split(': ')[1].split(',')[0].strip()
+            permission = current_user[3].strip()
+            snmpv3_users.append([username, auth_algorithm, priv_algorithm, permission])
 
         if not listener_ports:
             raise Exception("No listener ports found in the SNMP configuration.")
@@ -112,8 +109,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         client.close()
 
 def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass):
-    listener_ports, snmp_versions, snmpv3_users, traps = bluecoat_snmp_config
-
+    # Convert Bluecoat snmp config to SkyHigh format
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, dest_port)
     if not uuid:
         return  # Stop if UUID could not be retrieved
@@ -128,47 +124,40 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
 
     # Fetch existing configuration
     try:
-        response = subprocess.run(
-            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'GET', f'{route_url}', '-H', 'Content-Type: application/xml'],
-            capture_output=True,
-            text=True
-        )
-        existing_xml = response.stdout
-        if response.returncode != 0:
-            raise Exception(f"Failed to fetch existing SNMP Configuration. {response.stderr}")
-    except Exception as e:
+        response = requests.get(route_url, headers=headers, verify=False)
+        existing_xml = response.text
+    except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to fetch existing SNMP Configuration: {e}")
         return
 
-    # Modify the XML with listener addresses
+    # Modify the XML based on user input
     root = ET.fromstring(existing_xml)
-    listener_prop = root.find(".//configurationProperty[@key='snmp.agent.listeneraddresses']")
-    if listener_prop is not None:
-        listener_prop.clear()
-    else:
-        listener_prop = ET.SubElement(root, "configurationProperty", {
-            "key": "snmp.agent.listeneraddresses",
-            "type": "com.scur.type.inlineList",
-            "listType": "com.scur.type.complex.snmpports",
-            "encrypted": "false"
-        })
 
-    listener_entries = ''
-    for listener in listener_ports:
-        address = f"{listener[0]}:{listener[1]}"
-        listener_entries += f'''
-    &lt;listEntry&gt;
-      &lt;complexEntry&gt;
-        &lt;acElements/&gt;
-        &lt;configurationProperties&gt;
-          &lt;configurationProperty key=&quot;prot&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;udp&quot;/&gt;
-          &lt;configurationProperty key=&quot;ipaddress&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;{address}&quot;/&gt;
-        &lt;/configurationProperties&gt;
-      &lt;/complexEntry&gt;
-      &lt;description&gt;Migrated using tool&lt;/description&gt;
-    &lt;/listEntry&gt;'''
+    def prompt_for_protocol(protocol):
+        return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes')
 
-    listener_prop.set("value", f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;10.2.7-40006&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&#xa;  &lt;description&gt;&lt;/description&gt;&#xa;  &lt;content&gt;{listener_entries}&#xa;  &lt;/content&gt;&#xa;&lt;/list&gt;')
+    snmp_v1_status = prompt_for_protocol("SNMP v1")
+    snmp_v2c_status = prompt_for_protocol("SNMP v2c")
+    snmp_v3_status = prompt_for_protocol("SNMP v3")
+
+    protocol_map = {
+        "snmp.agent.allowprotocolv1": snmp_v1_status,
+        "snmp.agent.allowprotocolv2c": snmp_v2c_status,
+        "snmp.agent.allowprotocolv3": snmp_v3_status
+    }
+
+    for key, status in protocol_map.items():
+        value = "true" if status == 'yes' else "false"
+        prop = root.find(f".//configurationProperty[@key='{key}']")
+        if prop is not None:
+            prop.set("value", value)
+        else:
+            new_prop = ET.SubElement(root, "configurationProperty", {
+                "key": key,
+                "type": "com.scur.type.boolean",
+                "encrypted": "false",
+                "value": value
+            })
 
     # Save the modified XML locally for testing
     outputs_dir = Path("outputs")
@@ -191,52 +180,39 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         messagebox.showerror("Error", f"Failed to upload modified SNMP Configuration: {e}")
         return
 
-    # Protocol prompts
-    def prompt_for_protocol(protocol):
-        return messagebox.askquestion(f"Enable {protocol}", f"Do you want to enable {protocol}?", icon='question', type='yesno', default='yes', options=('Enabled', 'Disabled'))
-
-    snmp_v1_status = prompt_for_protocol("SNMP v1")
-    snmp_v2c_status = prompt_for_protocol("SNMP v2c")
-    snmp_v3_status = prompt_for_protocol("SNMP v3")
-
-    protocol_map = {
-        "snmp.allowprotocolv1": snmp_v1_status,
-        "snmp.allowprotocolv2c": snmp_v2c_status,
-        "snmp.allowprotocolv3": snmp_v3_status
-    }
-
-    for key, status in protocol_map.items():
-        value = "true" if status == 'yes' else "false"
-        prop = root.find(f".//configurationProperty[@key='{key}']")
-        if prop is not None:
-            prop.set("value", value)
-        else:
-            new_prop = ET.SubElement(root, "configurationProperty", {
-                "key": key,
-                "type": "com.scur.type.boolean",
-                "encrypted": "false",
-                "value": value
-            })
-
-    # Save the modified XML again after protocol changes
-    with open(modified_xml_file, 'w') as file:
-        file.write(ET.tostring(root, encoding='unicode'))
-
-    # Upload the final modified XML
-    try:
-        response = subprocess.run(
-            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{modified_xml_file}', f'{route_url}', '-H', 'Content-Type: application/xml'],
-            capture_output=True,
-            text=True
-        )
-        curl_output = response.stdout
-        if response.returncode != 0:
-            raise Exception(f"Failed to upload final SNMP Configuration. {curl_output}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to upload final SNMP Configuration: {e}")
-        return
-
-    # Logout
-    force_api_logout(dest_ip, dest_port)
-
     return bluecoat_snmp_config
+
+def migrate_snmp_config(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
+    try:
+        # Step 1: Fetch snmp config from Bluecoat
+        bluecoat_snmp_config, snmp_versions, snmpv3_users, traps = fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, source_password)
+        if not bluecoat_snmp_config:
+            return
+        
+        # Step 2: Convert fetched snmp config to SkyHigh format
+        skyhigh_snmp_config = convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass)
+
+        # Step 3: Save converted snmp config to a temporary file
+        outputs_dir = Path("outputs")
+        outputs_dir.mkdir(exist_ok=True)
+        temp_snmp_config_file = outputs_dir / f"{source_ip}_snmp_config.csv"
+        with open(temp_snmp_config_file, "w") as file:
+            for listener in bluecoat_snmp_config:
+                file.write(','.join(listener) + '\n')
+            for version, status in snmp_versions:
+                file.write(f'SNMP{version},{status}\n')
+            for user in snmpv3_users:
+                file.write(','.join(user) + '\n')
+            for trap in traps:
+                file.write(','.join(trap) + '\n')
+    
+        # Commit changes
+        curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{port}/Konfigurator/REST/commit'
+        subprocess.run(curl_command, shell=True)
+        # Logout
+        force_api_logout(dest_ip, dest_port)
+
+        messagebox.showinfo("Success", f"SNMP Config has been fetched, converted, saved to {temp_snmp_config_file}, and uploaded to the Skyhigh Web Gateway.")
+    
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to migrate SNMP Config: {e}")
