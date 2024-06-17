@@ -109,7 +109,7 @@ def fetch_snmp_config_from_bluecoat(source_ip, source_port, source_username, sou
         client.close()
 
 def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_port, dest_user, dest_pass):
-    listener_ports, snmp_versions, snmpv3_users, traps = bluecoat_snmp_config
+    listener_ports = bluecoat_snmp_config
 
     uuid = get_appliance_uuid(dest_ip, dest_user, dest_pass, dest_port)
     if not uuid:
@@ -155,18 +155,7 @@ def convert_snmp_config_to_skyhigh_format(bluecoat_snmp_config, dest_ip, dest_po
         if listener[0] == "<All>":
             listener[0] = "0.0.0.0"
         address = f"{listener[0]}:{listener[1]}"
-        listener_entries += f'''
-    &lt;listEntry&gt;
-      &lt;complexEntry&gt;
-        &lt;acElements/&gt;
-        &lt;configurationProperties&gt;
-          &lt;configurationProperty key=&quot;prot&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;udp&quot;/&gt;
-          &lt;configurationProperty key=&quot;ipaddress&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;{address}&quot;/&gt;
-        &lt;/configurationProperties&gt;
-      &lt;/complexEntry&gt;
-      &lt;description&gt;Migrated using tool&lt;/description&gt;
-    &lt;/listEntry&gt;'''
-
+        listener_entries += f'    &lt;listEntry&gt;      &lt;complexEntry&gt;        &lt;acElements/&gt;        &lt;configurationProperties&gt;          &lt;configurationProperty key=&quot;prot&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;udp&quot;/&gt;          &lt;configurationProperty key=&quot;ipaddress&quot; type=&quot;com.scur.type.string&quot; encrypted=&quot;false&quot; value=&quot;{address}&quot;/&gt;        &lt;/configurationProperties&gt;      &lt;/complexEntry&gt;      &lt;description&gt;Migrated using tool&lt;/description&gt;    &lt;/listEntry&gt;'
     listener_prop.set("value", f'&lt;list version=&quot;1.0.3.46&quot; mwg-version=&quot;10.2.7-40006&quot; classifier=&quot;Other&quot; systemList=&quot;false&quot; structuralList=&quot;false&quot; defaultRights=&quot;2&quot;&gt;&#xa;  &lt;description&gt;&lt;/description&gt;&#xa;  &lt;content&gt;{listener_entries}&#xa;  &lt;/content&gt;&#xa;&lt;/list&gt;')
 
     # Save the modified XML locally for testing
