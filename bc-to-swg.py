@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.3.3"
+app_version = "2.3.4"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -70,7 +70,7 @@ def load_config(entries, file_entry):
 def migrate_action(src_type, entries, file_entry):
     if src_type.get() == "file":
         # Use the file directly
-        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
+        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[11].get(), file_entry.get(), append_overwrite_type.get(), entries[5].get())
     else:
         # Fetch live data, clean it, and post
         source_file = f"{entries[0].get()}.csv"
