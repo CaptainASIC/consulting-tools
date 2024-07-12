@@ -76,7 +76,7 @@ def migrate_action(src_type, entries, file_entry):
         source_file = f"{entries[0].get()}.csv"
         fetch_static_routes(entries[0].get(), entries[2].get(), entries[3].get(), source_file, entries[1].get())
         cleaned_file = clean_and_save_routes(source_file)
-        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[8].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
+        post_routes(app_version, entries[4].get(), entries[6].get(), entries[7].get(), entries[11].get(), cleaned_file, append_overwrite_type.get(), entries[5].get())
 
 def choose_file(entry):
     filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
