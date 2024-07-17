@@ -39,7 +39,6 @@ def fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, 
         client.close()
 
 def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
-    # Convert Bluecoat proxy services to SkyHigh format
     converted_lines = []
     current_service_lines = []
     service_type = ""
@@ -69,6 +68,9 @@ def convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services):
     if current_service_lines:
         process_service_block(current_service_lines, converted_lines, service_type)
 
+    # Remove duplicates
+    converted_lines = list(dict.fromkeys(converted_lines))
+
     converted_data = "\n".join(converted_lines)
     return converted_data
 
@@ -82,8 +84,18 @@ def process_service_block(service_lines, converted_lines, service_type):
             parts = re.sub(r'\s+', ',', line.strip()).split(',')
             if len(parts) >= 3:
                 # Replace the destination with 0.0.0.0 and remove source IP and mode
-                converted_line = f"{service_type},0.0.0.0,{parts[2]}"
-                converted_lines.append(converted_line)
+                dest_ip = "0.0.0.0"
+                port = parts[2]
+                
+                # Check if the port is a range
+                if '-' in port:
+                    start_port, end_port = map(int, port.split('-'))
+                    for single_port in range(start_port, end_port + 1):
+                        converted_line = f"{service_type},{dest_ip},{single_port}"
+                        converted_lines.append(converted_line)
+                else:
+                    converted_line = f"{service_type},{dest_ip},{port}"
+                    converted_lines.append(converted_line)
 
 def migrate_proxy_services(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:

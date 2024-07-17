@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-app_version = "2.3.5"
+app_version = "2.3.6"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
