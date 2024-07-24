@@ -12,8 +12,9 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
+from staticUpload import static_config_upload
 
-app_version = "2.3.6"
+app_version = "2.3.7"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -274,6 +275,10 @@ def main():
     # Migrate SNMP Services button
     btn_migrate_snmp_services = tk.Button(proxy_frame, text="Migrate SNMP Config", command=lambda: migrate_snmp_config(entries[0].get(), entries[1].get(), entries[2].get(), entries[3].get(), entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get(), app_version), bg="gray60")
     btn_migrate_snmp_services.grid(row=2, column=0, padx=10, pady=5)
+
+    # Static Config Upload button
+    btn_static_config_upload = tk.Button(proxy_frame, text="Static Config Upload", command=lambda: static_config_upload(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get()), bg="gray60")
+    btn_static_config_upload.grid(row=3, column=0, padx=10, pady=5)
 
     # SWG Maintenance Tasks section
     maintenance_frame = tk.LabelFrame(field_frame, text="SWG Maintenance Tasks", padx=10, pady=10, bd=2, relief="groove", bg="gray15", fg="goldenrod")
