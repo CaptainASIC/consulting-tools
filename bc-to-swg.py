@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from staticUpload import static_config_upload
+from lib.staticUpload import static_config_upload
 
 app_version = "2.3.7"
 
