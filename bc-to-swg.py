@@ -281,7 +281,7 @@ def main():
     btn_static_config_upload.grid(row=3, column=0, padx=10, pady=5)
 
     # SNMP Update button
-    btn_snmp_update = tk.Button(proxy_frame, text="SNMP Update", command=lambda: mass_deploy_snmp(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()), bg="gray60")
+    btn_snmp_update = tk.Button(proxy_frame, text="SNMP Update", command=lambda: mass_deploy_snmp(entries[4].get(), int(entries[5].get()), entries[6].get(), entries[7].get()), bg="gray60")
     btn_snmp_update.grid(row=4, column=0, padx=10, pady=5)
 
     # SWG Maintenance Tasks section

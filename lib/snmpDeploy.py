@@ -3,7 +3,14 @@ from tkinter import filedialog, messagebox
 import requests
 from base64 import b64encode
 import csv
-from swgAPI import get_appliance_uuid, force_api_logout
+import sys
+from pathlib import Path
+
+# Add the parent directory to the Python path
+script_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(script_dir))
+
+from lib.swgAPI import get_appliance_uuid, force_api_logout
 
 def mass_deploy_snmp(dest_ip, dest_port, dest_user, dest_pass):
     def deploy():
