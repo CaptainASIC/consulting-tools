@@ -235,10 +235,17 @@ def migrate_snmp_config(source_ip, source_port, source_username, source_password
                 file.write(','.join(user) + '\n')
             for trap in traps:
                 file.write(','.join(trap) + '\n')
-    
+        
+        # Add pause prompt
+        messagebox.showinfo("Edit CSV", f"SNMP config has been saved to {temp_snmp_config_file}. You can now edit the CSV file if needed. Press OK to continue when you're finished.")
+
+        # Step 4: Upload the modified SNMP configuration
+        # (This step should be implemented based on your specific requirements for uploading the configuration)
+
         # Commit changes
         curl_command = f'curl -k -b cookies.txt -X POST https://{dest_ip}:{dest_port}/Konfigurator/REST/commit'
         subprocess.run(curl_command, shell=True)
+        
         # Logout
         force_api_logout(dest_ip, dest_port)
 
