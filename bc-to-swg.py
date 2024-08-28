@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 from lib.staticUpload import static_config_upload
-
-app_version = "2.3.7"
+from lib.snmpDeploy import mass_deploy_snmp
+app_version = "2.3.8"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent
@@ -279,6 +279,10 @@ def main():
     # Static Config Upload button
     btn_static_config_upload = tk.Button(proxy_frame, text="Static Config Upload", command=lambda: static_config_upload(entries[4].get(), entries[8].get(), entries[9].get(), entries[10].get()), bg="gray60")
     btn_static_config_upload.grid(row=3, column=0, padx=10, pady=5)
+
+    # SNMP Update button
+    btn_snmp_update = tk.Button(proxy_frame, text="SNMP Update", command=lambda: mass_deploy_snmp(entries[4].get(), entries[5].get(), entries[6].get(), entries[7].get()), bg="gray60")
+    btn_snmp_update.grid(row=4, column=0, padx=10, pady=5)
 
     # SWG Maintenance Tasks section
     maintenance_frame = tk.LabelFrame(field_frame, text="SWG Maintenance Tasks", padx=10, pady=10, bd=2, relief="groove", bg="gray15", fg="goldenrod")
