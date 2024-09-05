@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 from lib.staticUpload import static_config_upload
-app_version = "2.3.9"
+app_version = "2.4.0"
 
 # Modify the Python path to include the 'lib' directory
 script_dir = Path(__file__).resolve().parent

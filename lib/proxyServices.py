@@ -103,18 +103,31 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
         outputs_dir = Path("outputs")
         outputs_dir.mkdir(exist_ok=True)
         
-        # Step 1: Fetch proxy services from Bluecoat
-        bluecoat_proxy_services = fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)
-        if not bluecoat_proxy_services:
-            return
+        # Ask user if they want to use live data or previously downloaded data
+        data_source = messagebox.askquestion("Data Source", "Do you want to use live data?")
         
-        # Step 2: Convert fetched proxy services to SkyHigh format
-        skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
+        if data_source == 'yes':  # Use live data
+            # Step 1: Fetch proxy services from Bluecoat
+            bluecoat_proxy_services = fetch_proxy_services_from_bluecoat(source_ip, source_port, source_username, source_password)
+            if not bluecoat_proxy_services:
+                return
+            
+            # Step 2: Convert fetched proxy services to SkyHigh format
+            skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
 
-        # Step 3: Save converted proxy services to a temporary file
-        temp_proxy_services_file = outputs_dir / f"{source_ip}_proxy_services.csv"
-        with open(temp_proxy_services_file, "w") as file:
-            file.write(skyhigh_proxy_services)
+            # Step 3: Save converted proxy services to a temporary file
+            temp_proxy_services_file = outputs_dir / f"{source_ip}_proxy_services.csv"
+            with open(temp_proxy_services_file, "w") as file:
+                file.write(skyhigh_proxy_services)
+        else:  # Use previously downloaded data
+            # Prompt user to select the previously downloaded file
+            temp_proxy_services_file = filedialog.askopenfilename(
+                title="Select Previously Downloaded Proxy Services File",
+                filetypes=[("CSV Files", "*.csv")]
+            )
+            if not temp_proxy_services_file:
+                messagebox.showinfo("Cancelled", "Operation cancelled by user.")
+                return
 
         # Step 4: Ask user to migrate each service type
         service_types = ["HTTP", "FTP", "TCP"]
@@ -122,7 +135,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
             if messagebox.askyesno("Migrate Proxy Services", f"Do you want to migrate {service_type} Proxy Services?"):
                 post_proxy_services(app_version, dest_ip, dest_user, dest_pass, temp_proxy_services_file, dest_port, service_type)
 
-        messagebox.showinfo("Success", f"Proxy services have been fetched, converted, saved to {temp_proxy_services_file}, and uploaded to the Skyhigh Web Gateway.")
+        messagebox.showinfo("Success", f"Proxy services have been {'fetched, converted, ' if data_source == 'yes' else ''}uploaded to the Skyhigh Web Gateway.")
     
     except Exception as e:
         messagebox.showerror("Error", f"Failed to migrate proxy services: {e}")
