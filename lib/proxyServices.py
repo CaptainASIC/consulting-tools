@@ -97,6 +97,9 @@ def process_service_block(service_lines, converted_lines, service_type):
                     converted_line = f"{service_type},{dest_ip},{port}"
                     converted_lines.append(converted_line)
 
+import os
+from pathlib import Path
+
 def migrate_proxy_services(source_ip, source_port, source_username, source_password, dest_ip, dest_port, dest_user, dest_pass, app_version):
     try:
         # Ensure the "outputs" directory exists
@@ -115,7 +118,7 @@ def migrate_proxy_services(source_ip, source_port, source_username, source_passw
             # Step 2: Convert fetched proxy services to SkyHigh format
             skyhigh_proxy_services = convert_proxy_services_to_skyhigh_format(bluecoat_proxy_services)
 
-            # Step 3: Save converted proxy services to a temporary file
+            # Step 3: Save converted proxy services to a temporary file in the outputs directory
             temp_proxy_services_file = outputs_dir / f"{source_ip}_proxy_services.csv"
             with open(temp_proxy_services_file, "w") as file:
                 file.write(skyhigh_proxy_services)
@@ -231,16 +234,23 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
         modified_xml = existing_xml.replace('&lt;/content&gt;', f'{new_entries}&lt;/content&gt;')
 
         # Save the modified XML locally for testing
-        with open(f'{service_type.lower()}_services.xml', 'w') as new_xml_file:
+        outputs_dir = Path("outputs")
+        outputs_dir.mkdir(exist_ok=True)
+        new_xml_file_path = outputs_dir / f'{service_type.lower()}_services.xml'
+        with open(new_xml_file_path, 'w') as new_xml_file:
             new_xml_file.write(modified_xml)
+
+        print(f"Modified XML saved to: {new_xml_file_path}")
+        print(f"XML Content:\n{modified_xml}")
 
         # Step 3: Upload the modified XML
         result = subprocess.run(
-            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{new_xml_file.name}', f'{route_url}', '-H', 'Content-Type: application/xml'],
+            ['curl', '-k', '-c', 'cookies.txt', '-u', f'{dest_user}:{dest_pass}', '-X', 'PUT', '-d', f'@{new_xml_file_path}', f'{route_url}', '-H', 'Content-Type: application/xml'],
             capture_output=True,
             text=True
         )
         curl_output = result.stdout
+        print(f"cURL Output:\n{curl_output}")
 
         # Check if the last line contains </entry>
         if '</entry>' not in curl_output:
@@ -259,3 +269,5 @@ def post_proxy_services(app_version, dest_ip, dest_user, dest_pass, filename, po
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Failed to update Proxy Services: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred: {e}")
